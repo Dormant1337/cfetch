@@ -642,7 +642,7 @@ int main(int argc, char *argv[])
 	}
 	else {
 		fprintf(stderr, "Error: Invalid arguments.\n");
-		fprintf(stderr, "Usage: %s [--arch | --redhat | --apple-mini | --fedora | --gentoo | --tux | --apple | --mint | --slackware | --ExportAscii <filename>]\n", argv[0]);
+		fprintf(stderr, "Usage: %s [--arch | --redhat | --apple-mini | --fedora | --gentoo | --tux | --apple | --mint | --slackware | --debian | --ExportAscii <filename>]\n", argv[0]);
 		return 1;
 	}
 
