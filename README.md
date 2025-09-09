@@ -22,7 +22,7 @@
 ## Build
 - With Makefile:
   make
-  sudo make install    (# optional, installs to /usr/local/bin by default)
+  sudo make install         (optional, installs to /usr/local/bin by default)
 - Without Makefile:
   gcc main.c -o cfetch
   gcc -O2 -Wall -Wextra -std=c11 main.c -o cfetch
