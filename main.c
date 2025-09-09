@@ -6,6 +6,9 @@
 #define _POSIX_C_SOURCE 200809L
 #include <glob.h>
 #include <ctype.h>
+#include <unistd.h>
+#include <unistd.h>
+#include <pwd.h>
 
 #if defined(__APPLE__)
 #include <sys/types.h>
@@ -14,8 +17,12 @@
 #if defined(_WIN32)
 #include <windows.h>
 #endif
+#include <fcntl.h>
+#include <bits/waitflags.h>
 
-
+#define LSH_RL_BUFSIZE 1024
+#define LSH_TOK_BUFSIZE 64
+#define LSH_TOK_DELIM " \t\r\n\a"
 #define MAX_ASCII_FILE_LINES            1000
 #define MAX_ASCII_FILE_LINE_LENGTH      512
 
@@ -23,7 +30,86 @@ int spaces_before_blocks = 3;
 char characteristics_sentence_2[128];
 char characteristics_sentence_1[128];
 char last_hexcolor[16];
+char *get_shell_info(void);
 
+char *get_shell_info(void)
+{
+	char			*env;
+	char			shell_path[256];
+	char			shell_name[128];
+	char			cmd[512];
+	FILE			*pipe;
+	char			line[512];
+	char			*res;
+	const char		*args[] = { "--version", "-version", "-v", "-V", NULL };
+	int			i;
+	char			*slash;
+
+	env = getenv("SHELL");
+	if (env && *env)
+		snprintf(shell_path, sizeof(shell_path), "%s", env);
+	else {
+		struct passwd	*pw = getpwuid(getuid());
+
+		if (pw && pw->pw_shell && *pw->pw_shell)
+			snprintf(shell_path, sizeof(shell_path), "%s", pw->pw_shell);
+		else
+			return strdup("unknown");
+	}
+
+	slash = strrchr(shell_path, '/');
+	if (slash)
+		snprintf(shell_name, sizeof(shell_name), "%s", slash + 1);
+	else
+		snprintf(shell_name, sizeof(shell_name), "%s", shell_path);
+
+	for (i = 0; args[i]; i++) {
+		snprintf(cmd, sizeof(cmd), "%s %s 2>/dev/null", shell_path, args[i]);
+		pipe = popen(cmd, "r");
+		if (!pipe)
+			continue;
+		if (fgets(line, sizeof(line), pipe) != NULL) {
+			char		*p = line;
+
+			line[strcspn(line, "\r\n")] = 0;
+			while (*p == ' ' || *p == '\t')
+				p++;
+			if (!strncmp(p, shell_name, strlen(shell_name))) {
+				res = strdup(p);
+			} else {
+				res = malloc(strlen(shell_name) + 1 + strlen(p) + 1);
+				if (res)
+					sprintf(res, "%s %s", shell_name, p);
+			}
+			pclose(pipe);
+			return res ? res : strdup(shell_name);
+		}
+		pclose(pipe);
+	}
+
+	{
+		const char	*ver = NULL;
+
+		if (!strcmp(shell_name, "bash"))
+			ver = getenv("BASH_VERSION");
+		else if (!strcmp(shell_name, "zsh"))
+			ver = getenv("ZSH_VERSION");
+		else if (!strcmp(shell_name, "fish"))
+			ver = getenv("FISH_VERSION");
+		else if (!strcmp(shell_name, "ksh"))
+			ver = getenv("KSH_VERSION");
+
+		if (ver && *ver) {
+			res = malloc(strlen(shell_name) + 1 + strlen(ver) + 1);
+			if (res) {
+				sprintf(res, "%s %s", shell_name, ver);
+				return res;
+			}
+		}
+	}
+
+	return strdup(shell_name);
+}
 char *get_memory(void)
 {
 	const char *Gigabyte = "GB";
@@ -410,40 +496,47 @@ int hex_to_true_color(const char *hex_color)
 }
 
 
-void characteristics_show(int processing_line) {
+void characteristics_show(int processing_line)
+{
 	characteristics_sentence_2[0] = '\0';
 	characteristics_sentence_1[0] = '\0';
 
-	if (processing_line == 2) { 
+	if (processing_line == 2) {
 		char *host = get_motherboard();
 		if (host != NULL) {
 			snprintf(characteristics_sentence_2, sizeof(characteristics_sentence_2), "%s", host);
 			snprintf(characteristics_sentence_1, sizeof(characteristics_sentence_1), "Host:");
 			free(host);
 		}
-	} else if (processing_line == 3) { 
-		char *cpu = get_cpu_name(); 
+	} else if (processing_line == 3) {
+		char *sh = get_shell_info();
+		if (sh != NULL) {
+			snprintf(characteristics_sentence_2, sizeof(characteristics_sentence_2), "%s", sh);
+			snprintf(characteristics_sentence_1, sizeof(characteristics_sentence_1), "Shell:");
+			free(sh);
+		}
+	} else if (processing_line == 4) {
+		char *cpu = get_cpu_name();
 		if (cpu != NULL) {
 			snprintf(characteristics_sentence_2, sizeof(characteristics_sentence_2), "%s", cpu);
 			snprintf(characteristics_sentence_1, sizeof(characteristics_sentence_1), "CPU:");
 			free(cpu);
 		}
-	} else if (processing_line == 4) {
+	} else if (processing_line == 5) {
 		char *gpu = get_gpu_name();
 		if (gpu != NULL) {
 			snprintf(characteristics_sentence_2, sizeof(characteristics_sentence_2), "%s", gpu);
 			snprintf(characteristics_sentence_1, sizeof(characteristics_sentence_1), "GPU:");
 			free(gpu);
 		}
-	} else if (processing_line == 5) {
+	} else if (processing_line == 6) {
 		char *memory = get_memory();
 		if (memory != NULL) {
 			snprintf(characteristics_sentence_2, sizeof(characteristics_sentence_2), "%s", memory);
 			snprintf(characteristics_sentence_1, sizeof(characteristics_sentence_1), "RAM:");
 			free(memory);
 		}
-	}
-	else if (processing_line == 6) {
+	} else if (processing_line == 7) {
 		char *distro = get_distro();
 		if (distro != NULL) {
 			capitalize_first(distro);
@@ -451,7 +544,7 @@ void characteristics_show(int processing_line) {
 			snprintf(characteristics_sentence_1, sizeof(characteristics_sentence_1), "OS:");
 			free(distro);
 		}
-	} else if (processing_line == 7) {
+	} else if (processing_line == 8) {
 		char *wm = get_wm_clean();
 		if (wm != NULL) {
 			capitalize_first(wm);
