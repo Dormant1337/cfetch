@@ -21,13 +21,16 @@
 
 ## Build
 - With Makefile:
-- 
+- ```
   make
-  sudo make install         
+  sudo make install
+  ```    
 - Without Makefile:
-- 
+
+- ```
   gcc main.c -o cfetch
   gcc -O2 -Wall -Wextra -std=c11 main.c -o cfetch
+  ```
 - Ensure ascii.c is in the same directory as main.c (it is included via `#include "ascii.c"`).
 
 ## Usage
