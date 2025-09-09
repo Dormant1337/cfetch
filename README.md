@@ -21,13 +21,13 @@
 
 ## Build
 - With Makefile:
-- ```
+  ```
   make
   sudo make install
   ```    
 - Without Makefile:
 
-- ```
+  ```
   gcc main.c -o cfetch
   gcc -O2 -Wall -Wextra -std=c11 main.c -o cfetch
   ```
