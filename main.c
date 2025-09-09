@@ -19,13 +19,14 @@
 #define MAX_ASCII_FILE_LINES            1000
 #define MAX_ASCII_FILE_LINE_LENGTH      512
 
+int spaces_before_blocks = 3;
 char characteristics_sentence_2[128];
 char characteristics_sentence_1[128];
 char last_hexcolor[16];
 
 char *get_memory(void)
 {
-	char Gigabyte[16] = "GB";
+	const char *Gigabyte = "GB";
 	FILE *f = fopen("/proc/meminfo", "r");
 	if (!f) return NULL;
 
@@ -401,7 +402,7 @@ int hex_to_true_color(const char *hex_color)
 	printf("\x1b[0m");
 	printf("\x1b[38;2;%d;%d;%dm", r, g, b);
 
-	if (strcmp(hex_part, "FF0081") == 0) {
+	if (strcmp(hex_part, "989ef7") == 0 || strcmp(hex_part, "FF0000") == 0 || strcmp(hex_part, "7EB4DA") == 0 || strcmp(hex_part, "5277C3") == 0) {
 		printf("\x1b[1m");
 	}
 
@@ -461,8 +462,38 @@ void characteristics_show(int processing_line) {
 	}
 }
 
+void print_color_blocks_raw(void) {
+	const char *colors[] = {
+		"#FF0000", "#00FF00", "#0000FF", "#FFFF00",
+		"#FF00FF", "#00FFFF", "#FFFFFF", "#808080"
+	};
+	int num_colors = sizeof(colors) / sizeof(colors[0]);
+	for (int i = 0; i < num_colors; ++i) {
+		long color_val;
+		int r, g, b;
+		const char *ptr = colors[i];
+		char hex_part[7];
+
+		if (*ptr == '#')
+			ptr++;
+		strncpy(hex_part, ptr, 6);
+		hex_part[6] = '\0';
+		color_val = strtol(hex_part, NULL, 16);
+
+		r = (color_val >> 16) & 0xFF;
+		g = (color_val >> 8) & 0xFF;
+		b = color_val & 0xFF;
+
+
+		printf("\x1b[48;2;%d;%d;%dm  ", r, g, b);
+	}
+	printf("\x1b[0m");
+}
+
+
 void print_ascii(const char *art[])
 {
+	char latest_hex_color[16] = "#000000";
 	char white_color[16] = "#ffffffff";
 	int visual_line_number = 0;
 	size_t max_line_length = 0;
@@ -563,12 +594,26 @@ void print_ascii(const char *art[])
 
 		visual_line_number++;
 		characteristics_show(visual_line_number);
+
+		bool did_print_info = false;
 		if (characteristics_sentence_1[0] != '\0') {
 			hex_to_true_color(white_color);
 			printf("%s %s", characteristics_sentence_1, characteristics_sentence_2);
 			hex_to_true_color(last_hexcolor);
+			did_print_info = true;
 		}
 
+		if (visual_line_number == 10) {
+			if (did_print_info) {
+				printf("   "); 
+			}
+			for (int i = 0; i < spaces_before_blocks; i++) {
+				printf(" ");
+			}
+			print_color_blocks_raw(); 
+			hex_to_true_color(last_hexcolor);
+		}
+		
 		printf("\n");
 		i = j;
 	}
@@ -582,22 +627,32 @@ void print_ascii_by_distro(char *distro) {
 		print_ascii(tux_ascii);
 		return;
 	}
-	if (strcmp(distro, "arch") == 0 || strcmp(distro, "archlinux") == 0) {
+	char *distro_lower = strdup(distro);
+	if (distro_lower == NULL) {
+		print_ascii(tux_ascii);
+		return;
+	}
+	for (char *p = distro_lower; *p; ++p) *p = tolower((unsigned char)*p);
+
+	if (strcmp(distro_lower, "arch") == 0 || strcmp(distro_lower, "archlinux") == 0) {
 		print_ascii(arch_ascii_classic);
-	} else if (strcmp(distro, "fedora") == 0) {
+	} else if (strcmp(distro_lower, "fedora") == 0) {
 		print_ascii(fedora_ascii);
-	} else if (strcmp(distro, "gentoo") == 0) {
+	} else if (strcmp(distro_lower, "gentoo") == 0) {
 		print_ascii(gentoo_ascii);
-	} else if (strcmp(distro, "redhat") == 0 || strcmp(distro, "rhel") == 0) {
+	} else if (strcmp(distro_lower, "redhat") == 0 || strcmp(distro_lower, "rhel") == 0) {
 		print_ascii(redhat_ascii);
-	} else if (strcmp(distro, "linuxmint") == 0 || strcmp(distro, "mint") == 0) {
+	} else if (strcmp(distro_lower, "linuxmint") == 0 || strcmp(distro_lower, "mint") == 0) {
 		print_ascii(mint_ascii);
-	} else if (strcmp(distro, "slackware") == 0) {
+	} else if (strcmp(distro_lower, "slackware") == 0) {
 		print_ascii(slackware_ascii);
+	} else if (strcmp(distro_lower, "debian") == 0) {
+		print_ascii(debian_ascii);
 	}
 	else {
 		print_ascii(tux_ascii);
 	}
+	free(distro_lower);
 }
 
 
@@ -613,13 +668,13 @@ int main(int argc, char *argv[])
 		print_ascii(arch_ascii);
 	} else if (argc == 2 && strcmp(argv[1], "--arch-classic") == 0) {
 		print_ascii(arch_ascii_classic); 
-        } else if (argc == 2 && strcmp(argv[1], "--redhat") == 0) {
+	} else if (argc == 2 && strcmp(argv[1], "--redhat") == 0) {
 		print_ascii(redhat_ascii);
 	} else if (argc == 2 && strcmp(argv[1], "--apple-mini") == 0) {
 		print_ascii(apple_ascii_mini);
 	} else if (argc == 2 && strcmp(argv[1], "--custom") == 0) {
 		print_ascii(custom_ascii); 
-        } else if (argc == 2 && strcmp(argv[1], "--fedora") == 0) {
+	} else if (argc == 2 && strcmp(argv[1], "--fedora") == 0) {
 		print_ascii(fedora_ascii);
 	} else if (argc == 2 && strcmp(argv[1], "--gentoo") == 0) {
 		print_ascii(gentoo_ascii);
@@ -633,6 +688,12 @@ int main(int argc, char *argv[])
 		print_ascii(slackware_ascii);
 	} else if (argc == 2 && strcmp(argv[1], "--debian") == 0) {
 		print_ascii(debian_ascii);
+	} else if (argc == 2 && strcmp(argv[1], "--arch-alt") == 0) {
+		print_ascii(arch_ascii_alt);
+	} else if (argc == 2 && strcmp(argv[1], "--dota") == 0) {
+		print_ascii(dota_ascii);
+	} else if (argc == 2 && strcmp(argv[1], "--nixos") == 0) {
+		print_ascii(nixos_ascii);
 	}
 	else if (argc >= 3 && strcmp(argv[1], "--ExportAscii") == 0) {
 		const char *filename = argv[2];
