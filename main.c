@@ -79,9 +79,9 @@ char *get_motherboard(void)
 	char *end = model + strlen(model) - 1;
 	while (end > model && isspace((unsigned char)*end)) *end-- = '\0';
 
-	char *result = malloc(strlen(vendor) + 1 + strlen(model) + 1); // Исправлен размер
+	char *result = malloc(strlen(vendor) + 1 + strlen(model) + 1);
 	if (!result) return NULL;
-	sprintf(result, "%s %s", vendor, model); // Убрано повторение vendor
+	sprintf(result, "%s %s", vendor, model);
 
 	return result;
 }
