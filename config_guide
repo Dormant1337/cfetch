@@ -1,0 +1,191 @@
+## cfetch Configuration Guide
+
+This document provides a comprehensive guide to configuring `cfetch`, a fast and customizable system information tool for Linux. `cfetch` allows users to display system details alongside elegant ASCII art, with extensive options for visual customization through its configuration file.
+
+### 1. Configuration File Location
+
+The `cfetch` configuration file is typically located at:
+*   `$XDG_CONFIG_HOME/cfetch/config`
+*   If `XDG_CONFIG_HOME` is not set, it defaults to `~/.config/cfetch/config`
+
+If the configuration file does not exist, `cfetch` will run with its default settings.
+
+### 2. General Structure
+
+The configuration file uses a simple key-value pair syntax within named sections. Comments are denoted by `#` and can be placed on their own line or at the end of a line. String values can be enclosed in double quotes (`"`), especially if they contain spaces or special characters.
+
+Example:
+```
+# This is a comment
+global {
+    ascii_art = "auto" # Another comment
+    info_padding = 4
+}
+```
+
+The configuration is divided into three main sections:
+*   `global {}`: Defines global settings for `cfetch`.
+*   `info {}`: Acts as a container for individual information line configurations.
+*   `line[N] {}`: Configures the appearance and content of a specific information line.
+
+### 3. Global Section (`global {}`)
+
+The `global` section contains settings that apply to the overall `cfetch` output.
+
+| Option                 | Type    | Default Value    | Description                                                                                                                                                                                                                                                                                                    |
+| :--------------------- | :------ | :--------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ascii_art`            | String  | `"auto"`         | Specifies the ASCII art to be displayed. <br><br> **Available options:** <br> `"auto"` (detects OS and uses corresponding art), `"arch"`, `"arch-classic"`, `"arch-alt"`, `"fedora"`, `"gentoo"`, `"redhat"`, `"rhel"`, `"mint"`, `"linuxmint"`, `"slackware"`, `"debian"`, `"tux"`, `"apple"`, `"apple-mini"`, `"custom"`, `"custom2"`, `"dota"`, `"nixos"`. |
+| `default_label_color`  | Hex Color | `"#cccccc"`      | The default hexadecimal color code (e.g., `#RRGGBB`) for the labels of information lines if not specified otherwise.                                                                                                                                                                                             |
+| `default_data_color`   | Hex Color | `"#00ffff"`      | The default hexadecimal color code (e.g., `#RRGGBB`) for the data (placeholder values) of information lines if not specified otherwise.                                                                                                                                                                              |
+| `info_padding`         | Integer | `4`              | The number of spaces between the ASCII art and the start of the information block.                                                                                                                                                                                                                             |
+| `frame_type`           | String  | `"none"`         | Defines the style of the frame around the information block. <br><br> **Available options:** <br> `"none"` (no frame), `"underline"` (each info line is underlined), `"allbox"` (a single box around the entire info block), `"doublebox"` (a double box split into two sections for software and hardware). |
+| `frame_color`          | Hex Color | `"#cccccc"`      | The hexadecimal color code (e.g., `#RRGGBB`) for the frame characters when `frame_type` is set to `allbox` or `doublebox`.                                                                                                                                                                                   |
+| `frame_title_soft`     | String  | `"Softwares"`    | The title displayed in the top section of the frame when `frame_type` is `doublebox`.                                                                                                                                                                                                                          |
+| `frame_title_hard`     | String  | `"Hardwares"`    | The title displayed in the middle section of the frame (separating software and hardware) when `frame_type` is `doublebox`.                                                                                                                                                                                    |
+
+### 4. Info Section (`info {}`)
+
+The `info` section is a mandatory wrapper for defining individual information lines. All `line[N]` configurations must be placed within this section.
+
+### 5. Line Configuration Section (`line[N] {}`)
+
+Each `line[N]` section configures a specific line of information to be displayed. `N` is an integer representing the line's index (starting from 0). Lines are displayed in ascending order of their index.
+
+| Option              | Type      | Default Value      | Description                                                                                                                                                                                                                                                                                                    |
+| :------------------ | :-------- | :----------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `present`           | Boolean   | `0` (false)        | (Implicit) By simply defining a `line[N]` section, `present` is set to `1` (true), making the line active. To disable a line, simply remove or comment out its `line[N]` section.                                                                                                                                |
+| `format`            | String    | `NULL`             | Defines the layout and content of the information line using placeholders. <br>Example: `format = "OS: %os%"`                                                                                                                                                                                                  |
+| `color`             | Hex Color | `NULL`             | Sets a hexadecimal color code (e.g., `#RRGGBB`) for the entire line, overriding `default_label_color` and `default_data_color`.                                                                                                                                                                                  |
+| `label_color`       | Hex Color | `NULL`             | Sets a hexadecimal color code (e.g., `#RRGGBB`) for the label part of the line, overriding `default_label_color`. This applies to text outside of placeholders.                                                                                                                                                   |
+| `data_color`        | Hex Color | `NULL`             | Sets a hexadecimal color code (e.g., `#RRGGBB`) for the data part of the line, overriding `default_data_color`. This applies to text within placeholders (`%placeholder%`).                                                                                                                                       |
+| `force %KEY%=VALUE` | String    | `NULL`             | Allows overriding the value of a specific placeholder for this line. The `KEY` must match a placeholder name (e.g., `os`, `cpu`). <br>Example: `force %os%="My Custom OS"`                                                                                                                                   |
+| `arrange_box`       | Integer   | `0`                | Controls how the line is grouped when `frame_type` is `doublebox`. <br><br> **Available options:** <br> `0` (no specific grouping), `1` (assigns the line to the "Softwares" section), `2` (assigns the line to the "Hardwares" section).                                                                      |
+
+### 6. Placeholders
+
+The `format` option in `line[N]` sections uses placeholders to dynamically insert system information. Placeholders are enclosed in percent signs (`%placeholder_name%`).
+
+| Placeholder      | Description                                    | Example Output            |
+| :--------------- | :--------------------------------------------- | :------------------------ |
+| `%username%`     | Current user's name                            | `user`                    |
+| `%hostname%`     | System's hostname                              | `my-laptop`               |
+| `%os%`           | Operating System distribution (e.g., Arch, Fedora) | `Arch Linux`              |
+| `%host%`         | Motherboard vendor and model                   | `ASUS ROG Strix Z490-E`   |
+| `%kernel%`       | Linux kernel version                           | `6.5.0-arch1-1`           |
+| `%cpu%`          | CPU name                                       | `Intel Core i7-10700K`    |
+| `%gpu%`          | GPU name                                       | `NVIDIA GeForce RTX 3070` |
+| `%ram%`          | Used/Total RAM                                 | `8.5G/15.8G`              |
+| `%shell%`        | Current shell executable                       | `/bin/bash`               |
+| `%shell_info%`   | Shell name and version                         | `bash 5.2.15`             |
+| `%uptime%`       | System uptime                                  | `1d 5h 30m`               |
+| `%wm%`           | Window Manager / Desktop Environment           | `KDE Plasma`              |
+| `%monitor%`      | Primary monitor resolution and refresh rate    | `1920x1080 @ 144Hz`       |
+| `%disk%`         | Used/Total disk space for root filesystem      | `50.1G / 236.7G`          |
+| `%packages%`     | Number of installed packages (per distro)      | `1234 pkgs`               |
+
+### 7. Color Format
+
+All color options (`default_label_color`, `default_data_color`, `color`, `label_color`, `data_color`, `frame_color`) accept hexadecimal color codes in the format `#RRGGBB`.
+*   `RR`: Red component (00-FF)
+*   `GG`: Green component (00-FF)
+*   `BB`: Blue component (00-FF)
+
+Example: `#FF0000` for red, `#00FF00` for green, `#0000FF` for blue, `#FFFFFF` for white, `#000000` for black.
+
+### 8. Example Configuration
+
+Here's an example configuration demonstrating various options:
+
+```
+# Global settings for cfetch
+global {
+    ascii_art = "arch-classic"
+    default_label_color = "#999999"
+    default_data_color = "#00FFFF"
+    info_padding = 4
+    frame_type = "doublebox"
+    frame_color = "#6A0DAD" # Purple frame
+    frame_title_soft = "My System Software"
+    frame_title_hard = "My System Hardware"
+}
+
+# Information lines
+info {
+    # Line 0: User and Host, with custom colors
+    line[0] {
+        format = "%username%@%hostname%"
+        color = "#FFD700" # Gold color for the whole line
+    }
+
+    # Line 1: OS and Kernel
+    line[1] {
+        format = "OS: %os%"
+        data_color = "#FF8C00" # Orange for OS data
+        arrange_box = 1 # Group in Softwares section
+    }
+
+    line[2] {
+        format = "Kernel: %kernel%"
+        arrange_box = 1 # Group in Softwares section
+    }
+
+    # Line 3: Packages
+    line[3] {
+        format = "Packages: %packages%"
+        arrange_box = 1 # Group in Softwares section
+    }
+
+    # Line 4: Shell info, force a specific value for shell
+    line[4] {
+        format = "Shell: %shell_info%"
+        force %shell_info%="My Zsh with Oh My Zsh!" # Override detected shell
+        arrange_box = 1 # Group in Softwares section
+    }
+
+    line[5] {
+        format = "WM: %wm%"
+        arrange_box = 1 # Group in Softwares section
+    }
+
+    # Line 6: Host (Motherboard)
+    line[6] {
+        format = "Host: %host%"
+        arrange_box = 2 # Group in Hardwares section
+    }
+
+    # Line 7: CPU
+    line[7] {
+        format = "CPU: %cpu%"
+        arrange_box = 2 # Group in Hardwares section
+    }
+
+    # Line 8: GPU
+    line[8] {
+        format = "GPU: %gpu%"
+        arrange_box = 2 # Group in Hardwares section
+    }
+
+    # Line 9: RAM
+    line[9] {
+        format = "RAM: %ram%"
+        arrange_box = 2 # Group in Hardwares section
+    }
+
+    # Line 10: Uptime
+    line[10] {
+        format = "Uptime: %uptime%"
+        arrange_box = 2 # Group in Hardwares section
+    }
+
+    # Line 11: Monitor information
+    line[11] {
+        format = "Monitor: %monitor%"
+        arrange_box = 2 # Group in Hardwares section
+    }
+
+    # Line 12: Disk usage
+    line[12] {
+        format = "Disk: %disk%"
+        arrange_box = 2 # Group in Hardwares section
+    }
+}
