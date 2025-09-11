@@ -73,3 +73,6 @@
 - Zer0Flux86 — https://github.com/Zer0Flux86
 - BoLIIIoi — https://github.com/BoLIIIoi
 
+### Documentation
+*   [Configuration Guide](./CONFIGURATION.md)
+
