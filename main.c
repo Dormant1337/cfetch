@@ -1,15 +1,16 @@
+#define _POSIX_C_SOURCE 200809L
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "ascii.c"
-#define _POSIX_C_SOURCE 200809L
 #include <glob.h>
 #include <ctype.h>
 #include <unistd.h>
 #include <pwd.h>
 #include <sys/utsname.h>
 #include <time.h>
+#include <sys/statvfs.h>
 
 #if defined(__APPLE__)
 #include <sys/types.h>
@@ -37,6 +38,7 @@ struct line_cfg {
 	char *data_color;
 	struct kv_pair *forced;
 	size_t forced_count;
+	int arrange_box;
 };
 
 struct cfetch_cfg {
@@ -46,6 +48,10 @@ struct cfetch_cfg {
 	int info_padding;
 	struct line_cfg *lines;
 	size_t lines_count;
+	char *frame_type;
+	char *frame_color;
+	char *frame_title_soft;
+	char *frame_title_hard;
 };
 
 static char *xstrdup(const char *s)
@@ -162,6 +168,10 @@ static void cfg_init_defaults(struct cfetch_cfg *cfg)
 	cfg->info_padding = 4;
 	cfg->lines = NULL;
 	cfg->lines_count = 0;
+	cfg->frame_type = xstrdup("none");
+	cfg->frame_color = xstrdup("#cccccc");
+	cfg->frame_title_soft = xstrdup("Softwares");
+	cfg->frame_title_hard = xstrdup("Hardwares");
 }
 
 static void cfg_ensure_line(struct cfetch_cfg *cfg, size_t idx)
@@ -182,6 +192,7 @@ static void cfg_ensure_line(struct cfetch_cfg *cfg, size_t idx)
 		n[i].data_color = NULL;
 		n[i].forced = NULL;
 		n[i].forced_count = 0;
+		n[i].arrange_box = 0;
 	}
 	cfg->lines = n;
 	cfg->lines_count = idx + 1;
@@ -194,6 +205,10 @@ static void cfg_free(struct cfetch_cfg *cfg)
 	free(cfg->ascii_art);
 	free(cfg->default_label_color);
 	free(cfg->default_data_color);
+	free(cfg->frame_type);
+	free(cfg->frame_color);
+	free(cfg->frame_title_soft);
+	free(cfg->frame_title_hard);
 	for (i = 0; i < cfg->lines_count; i++) {
 		free(cfg->lines[i].format);
 		free(cfg->lines[i].color);
@@ -373,6 +388,30 @@ static int cfg_load(struct cfetch_cfg *cfg)
 				val = read_kv_value(s);
 				if (val)
 					cfg->info_padding = atoi(val);
+			} else if (strncmp(s, "frame_type", 10) == 0) {
+				val = read_kv_value(s);
+				if (val) {
+					free(cfg->frame_type);
+					cfg->frame_type = xstrdup(val);
+				}
+			} else if (strncmp(s, "frame_color", 11) == 0) {
+				val = read_kv_value(s);
+				if (val) {
+					free(cfg->frame_color);
+					cfg->frame_color = xstrdup(val);
+				}
+			} else if (strncmp(s, "frame_title_soft", 16) == 0) {
+				val = read_kv_value(s);
+				if (val) {
+					free(cfg->frame_title_soft);
+					cfg->frame_title_soft = xstrdup(val);
+				}
+			} else if (strncmp(s, "frame_title_hard", 16) == 0) {
+				val = read_kv_value(s);
+				if (val) {
+					free(cfg->frame_title_hard);
+					cfg->frame_title_hard = xstrdup(val);
+				}
 			}
 			continue;
 		}
@@ -404,55 +443,81 @@ static int cfg_load(struct cfetch_cfg *cfg)
 					lc->data_color = xstrdup(val);
 				}
 			} else if (strncmp(s, "force", 5) == 0) {
-			char *p = s + 5;
-			char *name = NULL;
-			char *val = NULL;
-			char *q;
+				char *p = s + 5;
+				char *name = NULL;
+				char *val2 = NULL;
+				char *q;
 
-			p = ltrim(p);
-			if (*p == '%') {
-				q = strchr(p + 1, '%');
-				if (!q)
-					goto done_force;
-				name = strndup(p + 1, (size_t)(q - (p + 1)));
-				p = q + 1;
-			} else {
-				q = p;
-				while (*q && !isspace((unsigned char)*q) && *q != '=')
-					q++;
-				if (q == p)
-					goto done_force;
-				name = strndup(p, (size_t)(q - p));
-				p = q;
-			}
+				p = ltrim(p);
+				if (*p == '%') {
+					q = strchr(p + 1, '%');
+					if (!q)
+						goto done_force;
+					name = strndup(p + 1, (size_t)(q - (p + 1)));
+					p = q + 1;
+				} else {
+					q = p;
+					while (*q && !isspace((unsigned char)*q) && *q != '=')
+						q++;
+					if (q == p)
+						goto done_force;
+					name = strndup(p, (size_t)(q - p));
+					p = q;
+				}
 
-			p = ltrim(p);
-			if (*p != '=')
-				goto done_force;
-			p++;
-			p = ltrim(p);
-			if (*p == '"') {
-				q = strrchr(p + 1, '"');
-				if (!q)
+				p = ltrim(p);
+				if (*p != '=')
 					goto done_force;
-				*q = '\0';
-				val = xstrdup(p + 1);
-			} else {
-				rtrim_inplace(p);
-				val = xstrdup(p);
-			}
-			if (name && val)
-				line_force_set(lc, name, val);
+				p++;
+				p = ltrim(p);
+				if (*p == '"') {
+					q = strrchr(p + 1, '"');
+					if (!q)
+						goto done_force;
+					*q = '\0';
+					val2 = xstrdup(p + 1);
+				} else {
+					rtrim_inplace(p);
+					val2 = xstrdup(p);
+				}
+				if (name && val2)
+					line_force_set(lc, name, val2);
 done_force:
-			free(name);
-			free(val);
-		}
+				free(name);
+				free(val2);
+			} else if (strncmp(s, "arrange_box", 11) == 0) {
+				val = read_kv_value(s);
+				if (val)
+					lc->arrange_box = atoi(val);
+			}
 			continue;
 		}
 	}
 	free(line);
 	fclose(f);
 	return 1;
+}
+
+char *get_monitor_info(void)
+{
+	FILE *pipe;
+	char line[256];
+	char *res = NULL;
+	char *tmp;
+
+	pipe = popen("xrandr --current | grep '*' | awk '{print $1\" @ \"$2\"Hz\"}'", "r");
+	if (!pipe)
+		return xstrdup("unknown");
+	if (fgets(line, sizeof(line), pipe) != NULL) {
+		line[strcspn(line, "\n")] = '\0';
+		res = strdup(line);
+	}
+	pclose(pipe);
+	if (!res) {
+		tmp = strdup("unknown");
+		return tmp;
+	}
+	return res;
 }
 
 char *get_shell_info(void)
@@ -606,6 +671,61 @@ void capitalize_first(char *s)
 {
 	if (s && s[0] != '\0')
 		s[0] = toupper((unsigned char)s[0]);
+}
+
+char *get_disk_info(void)
+{
+	struct statvfs fs;
+	unsigned long total, used;
+	double total_gb, used_gb;
+	char *res;
+
+	if (statvfs("/", &fs) != 0)
+		return xstrdup("unknown");
+
+	total = fs.f_blocks * fs.f_frsize;
+	used = (fs.f_blocks - fs.f_bfree) * fs.f_frsize;
+	total_gb = (double) total / (1024.0*1024*1024);
+	used_gb = (double) used / (1024.0*1024*1024);
+
+	res = malloc(64);
+	if (!res) return xstrdup("unknown");
+	snprintf(res, 64, "%.1fG / %.1fG", used_gb, total_gb);
+	return res;
+}
+
+char *get_packages_count(const char *distro)
+{
+	FILE *pipe;
+	char buf[256];
+	long count = 0;
+	char *cmd = NULL;
+	char *res;
+
+	if (!distro)
+		return xstrdup("unknown");
+
+	if (!strcmp(distro, "arch") || !strcmp(distro, "archlinux"))
+		cmd = "pacman -Qq";
+	else if (!strcmp(distro, "debian") || !strcmp(distro, "ubuntu"))
+		cmd = "dpkg --get-selections";
+	else if (!strcmp(distro, "fedora") || !strcmp(distro, "rhel") || !strcmp(distro, "redhat"))
+		cmd = "rpm -qa";
+	else
+		return xstrdup("unknown");
+
+	pipe = popen(cmd, "r");
+	if (!pipe)
+		return xstrdup("unknown");
+
+	while (fgets(buf, sizeof(buf), pipe))
+		count++;
+	pclose(pipe);
+
+	res = malloc(64);
+	if (!res) return xstrdup("unknown");
+	snprintf(res, 64, "%ld pkgs", count);
+	return res;
 }
 
 char *get_wm(void)
@@ -1097,7 +1217,22 @@ static char *placeholder_value(const char *name)
 	if (strcmp(n, "shell_info") == 0) {
 		free(n);
 		return get_shell_info();
-	}	
+	}
+	if (strcmp(n, "monitor") == 0) {
+		free(n);
+		return get_monitor_info();
+        }	
+	if (strcmp(n, "disk") == 0) {
+		free(n);
+		return get_disk_info();
+        }
+        if (strcmp(n, "packages") == 0) {
+		free(n);
+		char *d = get_distro();
+		char *val = get_packages_count(d);
+		if (d) free(d);
+		return val;
+        }
 	free(n);
 	return xstrdup("");
 }
@@ -1198,12 +1333,130 @@ static void print_info_line_idx(size_t idx, const struct cfetch_cfg *cfg, const 
 	hex_to_true_color(restore_color);
 }
 
-static void compute_max_visual_length(const char *art[], size_t *out_max)
+static char *line_render_plain(const struct line_cfg *lc)
 {
+	const char *p;
+	char *out;
+	size_t cap = 128;
+	size_t len = 0;
+
+	if (!lc || !lc->present || !lc->format)
+		return xstrdup("");
+	out = malloc(cap);
+	if (!out)
+		return xstrdup("");
+	out[0] = '\0';
+	p = lc->format;
+	while (*p) {
+		const char *b = strchr(p, '%');
+		if (!b) {
+			size_t n = strlen(p);
+			if (len + n + 1 > cap) {
+				size_t nc = (len + n + 1) * 2;
+				char *tmp = realloc(out, nc);
+				if (!tmp) {
+					free(out);
+					return xstrdup("");
+				}
+				out = tmp;
+				cap = nc;
+			}
+			memcpy(out + len, p, n);
+			len += n;
+			out[len] = '\0';
+			break;
+		}
+		if (b > p) {
+			size_t n = (size_t)(b - p);
+			if (len + n + 1 > cap) {
+				size_t nc = (len + n + 1) * 2;
+				char *tmp = realloc(out, nc);
+				if (!tmp) {
+					free(out);
+					return xstrdup("");
+				}
+				out = tmp;
+				cap = nc;
+			}
+			memcpy(out + len, p, n);
+			len += n;
+			out[len] = '\0';
+		}
+		{
+			const char *e = strchr(b + 1, '%');
+			if (!e) {
+				size_t n = strlen(b);
+				if (len + n + 1 > cap) {
+					size_t nc = (len + n + 1) * 2;
+					char *tmp = realloc(out, nc);
+					if (!tmp) {
+						free(out);
+						return xstrdup("");
+					}
+					out = tmp;
+					cap = nc;
+				}
+				memcpy(out + len, b, n);
+				len += n;
+				out[len] = '\0';
+				break;
+			}
+			if (e > b + 1) {
+				char *name = strndup(b + 1, (size_t)(e - (b + 1)));
+				char *val = line_force_get_dup(lc, name);
+				if (!val)
+					val = placeholder_value(name);
+				free(name);
+				if (val) {
+					size_t n = strlen(val);
+					if (len + n + 1 > cap) {
+						size_t nc = (len + n + 1) * 2;
+						char *tmp = realloc(out, nc);
+						if (!tmp) {
+							free(val);
+							free(out);
+							return xstrdup("");
+						}
+						out = tmp;
+						cap = nc;
+					}
+					memcpy(out + len, val, n);
+					len += n;
+					out[len] = '\0';
+					free(val);
+				}
+			}
+			p = e + 1;
+		}
+	}
+	return out;
+}
+
+struct art_row {
+	int cstart;
+	int start;
+	int end;
+	size_t visual_len;
+};
+
+static void build_art_rows(const char *art[], struct art_row **out_rows, size_t *out_count, size_t *out_max)
+{
+	size_t cap = 16;
+	size_t cnt = 0;
+	struct art_row *rows = malloc(cap * sizeof(*rows));
 	size_t max_line_length = 0;
 	int i;
 
+	if (!rows) {
+		*out_rows = NULL;
+		*out_count = 0;
+		*out_max = 0;
+		return;
+	}
+
 	for (i = 0; art[i] != NULL; ) {
+		int cs = i;
+
 		while (art[i] && art[i][0] == '#')
 			i++;
 		if (!art[i])
@@ -1236,93 +1489,473 @@ static void compute_max_visual_length(const char *art[], size_t *out_max)
 			}
 		}
 
+		if (cnt == cap) {
+			size_t ncap = cap * 2;
+			struct art_row *tmp = realloc(rows, ncap * sizeof(*rows));
+			if (!tmp)
+				break;
+			rows = tmp;
+			cap = ncap;
+		}
+		rows[cnt].cstart = cs;
+		rows[cnt].start = i;
+		rows[cnt].end = j;
+		rows[cnt].visual_len = visual_len;
 		if (visual_len > max_line_length)
 			max_line_length = visual_len;
-
+		cnt++;
 		i = j;
 	}
+	*out_rows = rows;
+	*out_count = cnt;
 	*out_max = max_line_length;
+}
+
+static void print_art_row_segments(const char *art[], int start, int end, char *latest_hex_color, size_t latest_hex_color_sz)
+{
+	int k;
+
+	for (k = start; k < end; ++k) {
+		if (art[k][0] == '#') {
+			hex_to_true_color(art[k]);
+			strncpy(last_hexcolor, art[k], sizeof(last_hexcolor) - 1);
+			last_hexcolor[sizeof(last_hexcolor) - 1] = '\0';
+			strncpy(latest_hex_color, art[k], latest_hex_color_sz - 1);
+			latest_hex_color[latest_hex_color_sz - 1] = '\0';
+			continue;
+		}
+		if (art[k][0] == '$') {
+			printf("%s", art[k] + 1);
+		} else {
+			printf("%s", art[k]);
+		}
+	}
+}
+
+static size_t strlen_safe(const char *s)
+{
+	if (!s)
+		return 0;
+	return strlen(s);
+}
+
+static void print_repeat_char(const char *color_hex, const char *restore_hex, char ch, size_t count)
+{
+	size_t i;
+
+	if (color_hex)
+		hex_to_true_color(color_hex);
+	for (i = 0; i < count; i++)
+		putchar(ch);
+	if (restore_hex)
+		hex_to_true_color(restore_hex);
+}
+
+static void print_repeat_utf8(const char *color_hex, const char *restore_hex, const char *glyph, size_t count)
+{
+	size_t i;
+
+	if (color_hex)
+		hex_to_true_color(color_hex);
+	for (i = 0; i < count; i++)
+		printf("%s", glyph);
+	if (restore_hex)
+		hex_to_true_color(restore_hex);
+}
+
+static void print_titled_border_line(const char *left_ch, const char *right_ch, const char *title, size_t inner_width, const char *frame_color, const char *restore_color)
+{
+	size_t title_len = strlen_safe(title);
+	size_t total = inner_width;
+	size_t left_dash;
+	size_t right_dash;
+
+	if (title_len > total)
+		title_len = total;
+	left_dash = (total - title_len) / 2;
+	right_dash = total - title_len - left_dash;
+
+	hex_to_true_color(frame_color);
+	printf("%s", left_ch);
+	print_repeat_utf8(frame_color, NULL, "─", left_dash);
+	if (title && title_len > 0)
+		printf("%.*s", (int)title_len, title);
+	print_repeat_utf8(frame_color, NULL, "─", right_dash);
+	printf("%s", right_ch);
+	hex_to_true_color(restore_color);
+}
+
+static int frame_kind(const struct cfetch_cfg *cfg)
+{
+	char *t;
+	int k = 0;
+
+	if (!cfg->frame_type)
+		return 0;
+	t = str_tolower_dup(cfg->frame_type);
+	if (!t)
+		return 0;
+	if (!strcmp(t, "none"))
+		k = 0;
+	else if (!strcmp(t, "underline"))
+		k = 1;
+	else if (!strcmp(t, "allbox"))
+		k = 2;
+	else if (!strcmp(t, "doublebox"))
+		k = 3;
+	free(t);
+	return k;
+}
+
+static const char *frame_color_or_default(const struct cfetch_cfg *cfg)
+{
+	if (cfg->frame_color && *cfg->frame_color)
+		return cfg->frame_color;
+	if (cfg->default_label_color && *cfg->default_label_color)
+		return cfg->default_label_color;
+	return "#cccccc";
 }
 
 static void print_ascii_configured(const char *art[], const struct cfetch_cfg *cfg)
 {
 	char latest_hex_color[16] = "#000000";
-	size_t max_line_length = 0;
-	size_t line_idx = 0;
-	int i;
+	struct art_row *rows = NULL;
+	size_t row_cnt = 0;
+	size_t max_art_len = 0;
+	size_t i;
 
-	compute_max_visual_length(art, &max_line_length);
+	build_art_rows(art, &rows, &row_cnt, &max_art_len);
 
-	for (i = 0; art[i] != NULL; ) {
-		while (art[i] && art[i][0] == '#') {
-			hex_to_true_color(art[i]);
-			strncpy(last_hexcolor, art[i], sizeof(last_hexcolor) - 1);
-			last_hexcolor[sizeof(last_hexcolor) - 1] = '\0';
-			strncpy(latest_hex_color, art[i], sizeof(latest_hex_color) - 1);
-			latest_hex_color[sizeof(latest_hex_color) - 1] = '\0';
-			i++;
+	if (frame_kind(cfg) == 0) {
+		size_t line_idx = 0;
+		for (i = 0; i < row_cnt; i++) {
+			print_art_row_segments(art, rows[i].cstart, rows[i].end, latest_hex_color, sizeof(latest_hex_color));
+			{
+				int padding = (int)max_art_len - (int)rows[i].visual_len;
+				int p;
+
+				if (padding < 0)
+					padding = 0;
+				for (p = 0; p < padding + cfg->info_padding; ++p)
+					putchar(' ');
+			}
+			print_info_line_idx(line_idx, cfg, latest_hex_color);
+			printf("\n");
+			line_idx++;
 		}
-		if (!art[i])
-			break;
+		printf("\x1b[0m");
+		free(rows);
+		return;
+	} else if (frame_kind(cfg) == 1) {
+		size_t line_idx = 0;
+		const char *fcol = frame_color_or_default(cfg);
+		for (i = 0; i < row_cnt; i++) {
+			char *plain = NULL;
+			size_t plen = 0;
+			print_art_row_segments(art, rows[i].cstart, rows[i].end, latest_hex_color, sizeof(latest_hex_color));
+			{
+				int padding = (int)max_art_len - (int)rows[i].visual_len;
+				int p;
 
-		size_t visual_len = 0;
-		int j = i;
-		if (art[j][0] == '$') {
-			while (art[j]) {
-				if (art[j][0] == '#') { j++; continue; }
-				if (art[j][0] == '$') {
-					visual_len += strlen(art[j] + 1);
-					j++;
-					continue;
-				}
-				break;
+				if (padding < 0)
+					padding = 0;
+				for (p = 0; p < padding + cfg->info_padding; ++p)
+					putchar(' ');
 			}
-		} else {
-			visual_len += strlen(art[j]);
-			j++;
-			while (art[j]) {
-				if (art[j][0] == '#') { j++; continue; }
-				if (art[j][0] == '$') {
-					visual_len += strlen(art[j] + 1);
-					j++;
-					continue;
-				}
-				break;
-			}
-		}
+			print_info_line_idx(line_idx, cfg, latest_hex_color);
+			printf("\n");
 
-		for (int k = i; k < j; ++k) {
-			if (art[k][0] == '#') {
-				hex_to_true_color(art[k]);
-				strncpy(last_hexcolor, art[k], sizeof(last_hexcolor) - 1);
-				last_hexcolor[sizeof(last_hexcolor) - 1] = '\0';
-				strncpy(latest_hex_color, art[k], sizeof(latest_hex_color) - 1);
-				latest_hex_color[sizeof(latest_hex_color) - 1] = '\0';
-				continue;
+			{
+				size_t spaces = max_art_len + cfg->info_padding;
+				size_t s;
+				for (s = 0; s < spaces; s++)
+					putchar(' ');
 			}
-			if (art[k][0] == '$') {
-				printf("%s", art[k] + 1);
+			if (line_idx < cfg->lines_count && cfg->lines[line_idx].present && cfg->lines[line_idx].format) {
+				plain = line_render_plain(&cfg->lines[line_idx]);
+				plen = strlen_safe(plain);
 			} else {
-				printf("%s", art[k]);
+				plen = 0;
+			}
+			print_repeat_utf8(fcol, latest_hex_color, "─", plen);
+			printf("\n");
+			if (plain)
+				free(plain);
+			line_idx++;
+		}
+		printf("\x1b[0m");
+		free(rows);
+		return;
+	} else if (frame_kind(cfg) == 2) {
+		size_t j;
+		const char *fcol = frame_color_or_default(cfg);
+		size_t lines_cap = 16;
+		size_t lines_cnt = 0;
+		size_t *idxs = malloc(lines_cap * sizeof(*idxs));
+		char **plains = NULL;
+		size_t *plens = NULL;
+		size_t inner_width = 0;
+		size_t box_rows;
+		size_t total_rows;
+		size_t r;
+
+		if (!idxs) {
+			free(rows);
+			return;
+		}
+
+		for (j = 0; j < cfg->lines_count; j++) {
+			if (!cfg->lines[j].present || !cfg->lines[j].format)
+				continue;
+			if (lines_cnt == lines_cap) {
+				size_t ncap = lines_cap * 2;
+				size_t *t = realloc(idxs, ncap * sizeof(*idxs));
+				if (!t)
+					break;
+				idxs = t;
+				lines_cap = ncap;
+			}
+			idxs[lines_cnt++] = j;
+		}
+
+		plains = malloc(lines_cnt * sizeof(*plains));
+		plens = malloc(lines_cnt * sizeof(*plens));
+		if (!plains || !plens) {
+			free(plains);
+			free(plens);
+			free(idxs);
+			free(rows);
+			return;
+		}
+		for (j = 0; j < lines_cnt; j++) {
+			plains[j] = line_render_plain(&cfg->lines[idxs[j]]);
+			plens[j] = strlen_safe(plains[j]);
+			if (plens[j] > inner_width)
+				inner_width = plens[j];
+		}
+
+		box_rows = 2 + lines_cnt;
+		total_rows = row_cnt > box_rows ? row_cnt : box_rows;
+
+		for (r = 0; r < total_rows; r++) {
+			if (r < row_cnt) {
+				print_art_row_segments(art, rows[r].cstart, rows[r].end, latest_hex_color, sizeof(latest_hex_color));
+				{
+					int padding = (int)max_art_len - (int)rows[r].visual_len;
+					int p;
+
+					if (padding < 0)
+						padding = 0;
+					for (p = 0; p < padding + cfg->info_padding; ++p)
+						putchar(' ');
+				}
+			} else {
+				int p;
+				for (p = 0; p < (int)(max_art_len + cfg->info_padding); ++p)
+					putchar(' ');
+			}
+
+			if (r == 0) {
+				hex_to_true_color(fcol);
+				printf("┌");
+				print_repeat_utf8(fcol, NULL, "─", inner_width + 2);
+				printf("┐");
+				hex_to_true_color(latest_hex_color);
+			} else if (r == box_rows - 1) {
+				hex_to_true_color(fcol);
+				printf("└");
+				print_repeat_utf8(fcol, NULL, "─", inner_width + 2);
+				printf("┘");
+				hex_to_true_color(latest_hex_color);
+			} else if (r - 1 < lines_cnt) {
+				size_t li = r - 1;
+				size_t pad = inner_width > plens[li] ? inner_width - plens[li] : 0;
+
+				hex_to_true_color(fcol);
+				printf("│ ");
+				hex_to_true_color(latest_hex_color);
+				print_info_line_idx(idxs[li], cfg, latest_hex_color);
+				hex_to_true_color(fcol);
+				{
+					size_t s;
+					for (s = 0; s < pad + 1; s++)
+						putchar(' ');
+				}
+				printf("│");
+				hex_to_true_color(latest_hex_color);
+			}
+			printf("\n");
+		}
+
+		for (j = 0; j < lines_cnt; j++)
+			free(plains[j]);
+		free(plains);
+		free(plens);
+		free(idxs);
+		printf("\x1b[0m");
+		free(rows);
+		return;
+	} else {
+		size_t j;
+		const char *fcol = frame_color_or_default(cfg);
+		size_t soft_cap = 16, hard_cap = 16;
+		size_t soft_cnt = 0, hard_cnt = 0;
+		size_t *soft_idx = malloc(soft_cap * sizeof(*soft_idx));
+		size_t *hard_idx = malloc(hard_cap * sizeof(*hard_idx));
+		char **soft_plain = NULL, **hard_plain = NULL;
+		size_t *soft_len = NULL, *hard_len = NULL;
+		size_t inner_width = 0;
+		size_t top_title_len = strlen_safe(cfg->frame_title_soft);
+		size_t mid_title_len = strlen_safe(cfg->frame_title_hard);
+		size_t rr, total_rows;
+		size_t box_rows;
+
+		if (!soft_idx || !hard_idx) {
+			free(soft_idx);
+			free(hard_idx);
+			free(rows);
+			return;
+		}
+
+		for (j = 0; j < cfg->lines_count; j++) {
+			if (!cfg->lines[j].present || !cfg->lines[j].format)
+				continue;
+			if (cfg->lines[j].arrange_box == 1) {
+				if (soft_cnt == soft_cap) {
+					size_t ncap = soft_cap * 2;
+					size_t *t = realloc(soft_idx, ncap * sizeof(*t));
+					if (!t)
+						break;
+					soft_idx = t;
+					soft_cap = ncap;
+				}
+				soft_idx[soft_cnt++] = j;
+			} else if (cfg->lines[j].arrange_box == 2) {
+				if (hard_cnt == hard_cap) {
+					size_t ncap = hard_cap * 2;
+					size_t *t = realloc(hard_idx, ncap * sizeof(*t));
+					if (!t)
+						break;
+					hard_idx = t;
+					hard_cap = ncap;
+				}
+				hard_idx[hard_cnt++] = j;
 			}
 		}
 
-		{
-			int padding = (int)max_line_length - (int)visual_len;
-			int p;
-
-			if (padding < 0) padding = 0;
-			for (p = 0; p < padding + cfg->info_padding; ++p)
-				putchar(' ');
+		soft_plain = malloc(soft_cnt * sizeof(*soft_plain));
+		soft_len = malloc(soft_cnt * sizeof(*soft_len));
+		hard_plain = malloc(hard_cnt * sizeof(*hard_plain));
+		hard_len = malloc(hard_cnt * sizeof(*hard_len));
+		if ((soft_cnt && (!soft_plain || !soft_len)) || (hard_cnt && (!hard_plain || !hard_len))) {
+			free(soft_plain);
+			free(soft_len);
+			free(hard_plain);
+			free(hard_len);
+			free(soft_idx);
+			free(hard_idx);
+			free(rows);
+			return;
 		}
 
-		print_info_line_idx(line_idx, cfg, latest_hex_color);
-		printf("\n");
-		i = j;
-		line_idx++;
-	}
+		for (j = 0; j < soft_cnt; j++) {
+			soft_plain[j] = line_render_plain(&cfg->lines[soft_idx[j]]);
+			soft_len[j] = strlen_safe(soft_plain[j]);
+			if (soft_len[j] > inner_width)
+				inner_width = soft_len[j];
+		}
+		for (j = 0; j < hard_cnt; j++) {
+			hard_plain[j] = line_render_plain(&cfg->lines[hard_idx[j]]);
+			hard_len[j] = strlen_safe(hard_plain[j]);
+			if (hard_len[j] > inner_width)
+				inner_width = hard_len[j];
+		}
+		if (top_title_len > inner_width)
+			inner_width = top_title_len;
+		if (mid_title_len > inner_width)
+			inner_width = mid_title_len;
 
-	printf("\x1b[0m");
+		box_rows = 1 + soft_cnt + 1 + hard_cnt + 1;
+		total_rows = row_cnt > box_rows ? row_cnt : box_rows;
+
+		for (rr = 0; rr < total_rows; rr++) {
+			if (rr < row_cnt) {
+				print_art_row_segments(art, rows[rr].cstart, rows[rr].end, latest_hex_color, sizeof(latest_hex_color));
+				{
+					int padding = (int)max_art_len - (int)rows[rr].visual_len;
+					int p;
+
+					if (padding < 0)
+						padding = 0;
+					for (p = 0; p < padding + cfg->info_padding; ++p)
+						putchar(' ');
+				}
+			} else {
+				int p;
+				for (p = 0; p < (int)(max_art_len + cfg->info_padding); ++p)
+					putchar(' ');
+			}
+
+			if (rr == 0) {
+				print_titled_border_line("┌", "┐", cfg->frame_title_soft, inner_width + 2, fcol, latest_hex_color);
+			} else if (rr > 0 && rr <= soft_cnt) {
+				size_t li = rr - 1;
+				size_t pad = inner_width > soft_len[li] ? inner_width - soft_len[li] : 0;
+
+				hex_to_true_color(fcol);
+				printf("│ ");
+				hex_to_true_color(latest_hex_color);
+				print_info_line_idx(soft_idx[li], cfg, latest_hex_color);
+				hex_to_true_color(fcol);
+				{
+					size_t s;
+					for (s = 0; s < pad + 1; s++)
+						putchar(' ');
+				}
+				printf("│");
+				hex_to_true_color(latest_hex_color);
+			} else if (rr == soft_cnt + 1) {
+				print_titled_border_line("├", "┤", cfg->frame_title_hard, inner_width + 2, fcol, latest_hex_color);
+			} else if (rr > soft_cnt + 1 && rr <= soft_cnt + 1 + hard_cnt) {
+				size_t li = rr - (soft_cnt + 2);
+				size_t pad = inner_width > hard_len[li] ? inner_width - hard_len[li] : 0;
+
+				hex_to_true_color(fcol);
+				printf("│ ");
+				hex_to_true_color(latest_hex_color);
+				print_info_line_idx(hard_idx[li], cfg, latest_hex_color);
+				hex_to_true_color(fcol);
+				{
+					size_t s;
+					for (s = 0; s < pad + 1; s++)
+						putchar(' ');
+				}
+				printf("│");
+				hex_to_true_color(latest_hex_color);
+			} else if (rr == box_rows - 1) {
+				hex_to_true_color(fcol);
+				printf("└");
+				print_repeat_utf8(fcol, NULL, "─", inner_width + 2);
+				printf("┘");
+				hex_to_true_color(latest_hex_color);
+			}
+			printf("\n");
+		}
+
+		for (j = 0; j < soft_cnt; j++)
+			free(soft_plain[j]);
+		for (j = 0; j < hard_cnt; j++)
+			free(hard_plain[j]);
+		free(soft_plain);
+		free(soft_len);
+		free(hard_plain);
+		free(hard_len);
+		free(soft_idx);
+		free(hard_idx);
+		printf("\x1b[0m");
+		free(rows);
+		return;
+	}
 }
 
 static const char **auto_art_by_distro(char *distro)
@@ -1411,7 +2044,13 @@ int main(int argc, char *argv[])
 		const char *filename = argv[2];
 		printf("// Generated by cfetch --ExportAscii %s\n", filename);
 		printf("// Insert this code into your C:\n\n");
-		return export_ascii_art(filename);
+		{
+			int rc = export_ascii_art(filename);
+			if (distro)
+				free(distro);
+			cfg_free(&cfg);
+			return rc;
+		}
 	}
 
 	if (argc == 1) {
@@ -1447,7 +2086,12 @@ int main(int argc, char *argv[])
 		print_ascii_configured((const char **)dota_ascii, &cfg);
 	} else if (argc == 2 && strcmp(argv[1], "--nixos") == 0) {
 		print_ascii_configured((const char **)nixos_ascii, &cfg);
-	} else {
+	} else if (argc == 2 && strcmp(argv[1], "--endeavour") == 0) {
+		print_ascii_configured((const char **)endeavour_ascii, &cfg);
+	} else if (argc == 2 && strcmp(argv[1], "--void") == 0) {
+		print_ascii_configured((const char **)void_ascii, &cfg);
+	}
+	else {
 		fprintf(stderr, "Error: Invalid arguments.\n");
 		fprintf(stderr, "Usage: %s [no args -> config ascii_art] or flags: --arch | --redhat | --apple-mini | --fedora | --gentoo | --tux | --apple | --mint | --slackware | --debian | --arch-alt | --dota | --nixos | --ExportAscii <filename>\n", argv[0]);
 		cfg_free(&cfg);

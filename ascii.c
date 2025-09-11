@@ -732,3 +732,93 @@ const char *nixos_ascii[] = {
 	"$'::::.",
 	NULL
 };
+
+const char *endeavour_ascii[] = {
+	"#846bbdff",
+	" ",
+	"                     ./o.",
+	"                   ./sssso-",
+	"                 `:osssssss+-",
+	"               `:+sssssssssso/.",
+	"             `-/ossssssssssssso/.",
+	"           `-/+sssssssssssssssso+:`",
+	"         `-:/+sssssssssssssssssso+/.",
+	"       `.://ossssssssssssssssssssso++-",
+	"      .://+ssssssssssssssssssssssso++:",
+	"    .:///ossssssssssssssssssssssssso++:",
+	"  `:////ssssssssssssssssssssssssssso+++.",
+	"`-////+ssssssssssssssssssssssssssso++++-",
+	" `..-+oosssssssssssssssssssssssso+++++/`",
+	"   ./++++++++++++++++++++++++++++++/:.",
+	"  `:::::::::::::::::::::::::------``",
+	NULL
+};
+
+const char *void_ascii[] = {
+	"#C0C0C0", // Устанавливаем c1 (светло-серый)
+	"                __.;=====;.__",
+	"            _.=+==++=++=+=+===;.",
+	"             -=+++=+===+=+=+++++=_",
+	"        .     -=:``     `--==+=++==.",
+	"       _vi,    `            --+=++++:",
+	"      .uvnvi.       _._       -==+==+.",
+	"     .vvnvnI`    .;==|==;.     :|=||=|.",
+	// Начало строки 8: ${c2}+QmQQm${c1}pvvnv; ${c2}_yYsyQQWUUQQQm #QmQ#${c1}:${c2}QQQWUV$QQm.
+	"#00FFFF", // Переключаемся на c2 (циан)
+	"+QmQQm",
+	"#C0C0C0", // Переключаемся на c1
+	"$pvvnv; ", // Заметьте пробел в конце, если он важен для выравнивания
+	"#00FFFF", // Переключаемся на c2
+	"$_yYsyQQWUUQQQm #QmQ#",
+	"#C0C0C0", // Переключаемся на c1
+	"$: ",
+	"#00FFFF", // Переключаемся на c2
+	"$QQQWUV$QQm.",
+	// Начало строки 9: ${c2} -QQWQW${c1}pvvo${c2}wZ?.wQQQE${c1}==<${c2}QWWQ/QWQW.QQWW${c1}(: ${c2}jQWQE
+	"#00FFFF", // c2
+	" -QQWQW",
+	"#C0C0C0", // c1
+	"$pvvo",
+	"#00FFFF", // c2
+	"$wZ?.wQQQE",
+	"#C0C0C0", // c1
+	"$==<",
+	"#00FFFF", // c2
+	"$QWWQ/QWQW.QQWW",
+	"#C0C0C0", // c1
+	"$(: ",
+	"#00FFFF", // c2
+	"$jQWQE",
+	// Начало строки 10: ${c2}  -$QQQQmmU'  jQQQ@${c1}+=<${c2}QWQQ)mQQQ.mQQQC${c1}+;${c2}jWQQ@'
+	"#00FFFF", // c2
+	"  -$QQQQmmU'  jQQQ@",
+	"#C0C0C0", // c1
+	"$+=<",
+	"#00FFFF", // c2
+	"$QWQQ)mQQQ.mQQQC",
+	"#C0C0C0", // c1
+	"$+;",
+	"#00FFFF", // c2
+	"$jWQQ@'",
+	// Начало строки 11: ${c2}   -$WQ8Y${c1}nI:   ${c2}QWQQwgQQWV${c1}`${c2}mWQQ.jQWQQgyyWW@!
+	"#00FFFF", // c2
+	"   -$WQ8Y",
+	"#C0C0C0", // c1
+	"$nI:   ",
+	"#00FFFF", // c2
+	"$QWQQwgQQWV",
+	"#C0C0C0", // c1
+	"$`",
+	"#00FFFF", // c2
+	"$mWQQ.jQWQQgyyWW@!",
+	// Начало строки 12: ${c1}     -1vvnvv.     `~+++`        ++|+++
+	"#C0C0C0", // Возвращаемся к c1
+	"     -1vvnvv.     `~+++`        ++|+++",
+	"      +vnvnnv,                 `-|===",
+	"       +vnvnvns.           .      :=-",
+	"        -Invnvvnsi..___..=sv=.     `",
+	"          +Invnvnvnnnnnnnnvvnn;.",
+	"            ~|Invnvnvvnvvvnnv}+`",
+	"               -~|{*l}*|~",
+	NULL
+};
