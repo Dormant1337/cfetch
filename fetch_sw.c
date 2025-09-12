@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <glob.h>
-// #include <ctype.h>
+
 #include <unistd.h>
 #include <pwd.h>
 #include <sys/utsname.h>
@@ -15,13 +15,6 @@
 #include "fetch_hw.h" 
 #include "utils.h"
 
-#if defined(__APPLE__)
-#include <sys/types.h>
-#include <sys/sysctl.h>
-#endif
-#if defined(_WIN32)
-#include <windows.h>
-#endif
 
 char *get_shell_info(void)
 {

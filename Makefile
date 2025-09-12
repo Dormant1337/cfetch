@@ -8,7 +8,7 @@ BINDIR = $(PREFIX)/bin
 
 TARGET = cfetch
 
-SOURCES = main.c fetch_hw.c fetch_sw.c utils.c
+SOURCES = main.c config.c fetch_hw.c fetch_sw.c utils.c ascii_gen.c ascii.c
 
 OBJECTS = $(SOURCES:.c=.o)
 

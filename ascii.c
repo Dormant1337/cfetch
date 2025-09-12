@@ -1,8 +1,6 @@
-//#include <stdio.h>
-//#include <stdlib.h>
+
 #include <string.h>
 #include <stdbool.h>
-//#include <ctype.h>
 
 
 
@@ -755,7 +753,7 @@ const char *endeavour_ascii[] = {
 };
 
 const char *void_ascii[] = {
-	"#C0C0C0", // Устанавливаем c1 (светло-серый)
+	"#C0C0C0",
 	"                __.;=====;.__",
 	"            _.=+==++=++=+=+===;.",
 	"             -=+++=+===+=+=+++++=_",
@@ -763,56 +761,51 @@ const char *void_ascii[] = {
 	"       _vi,    `            --+=++++:",
 	"      .uvnvi.       _._       -==+==+.",
 	"     .vvnvnI`    .;==|==;.     :|=||=|.",
-	// Начало строки 8: ${c2}+QmQQm${c1}pvvnv; ${c2}_yYsyQQWUUQQQm #QmQ#${c1}:${c2}QQQWUV$QQm.
-	"#00FFFF", // Переключаемся на c2 (циан)
+	"#00FFFF",
 	"+QmQQm",
-	"#C0C0C0", // Переключаемся на c1
-	"$pvvnv; ", // Заметьте пробел в конце, если он важен для выравнивания
-	"#00FFFF", // Переключаемся на c2
+	"#C0C0C0",
+	"$pvvnv; ",
+	"#00FFFF",
 	"$_yYsyQQWUUQQQm #QmQ#",
-	"#C0C0C0", // Переключаемся на c1
+	"#C0C0C0",
 	"$: ",
-	"#00FFFF", // Переключаемся на c2
+	"#00FFFF",
 	"$QQQWUV$QQm.",
-	// Начало строки 9: ${c2} -QQWQW${c1}pvvo${c2}wZ?.wQQQE${c1}==<${c2}QWWQ/QWQW.QQWW${c1}(: ${c2}jQWQE
-	"#00FFFF", // c2
+	"#00FFFF",
 	" -QQWQW",
-	"#C0C0C0", // c1
+	"#C0C0C0",
 	"$pvvo",
-	"#00FFFF", // c2
+	"#00FFFF",
 	"$wZ?.wQQQE",
-	"#C0C0C0", // c1
+	"#C0C0C0",
 	"$==<",
-	"#00FFFF", // c2
+	"#00FFFF",
 	"$QWWQ/QWQW.QQWW",
-	"#C0C0C0", // c1
+	"#C0C0C0",
 	"$(: ",
-	"#00FFFF", // c2
+	"#00FFFF",
 	"$jQWQE",
-	// Начало строки 10: ${c2}  -$QQQQmmU'  jQQQ@${c1}+=<${c2}QWQQ)mQQQ.mQQQC${c1}+;${c2}jWQQ@'
-	"#00FFFF", // c2
+	"#00FFFF",
 	"  -$QQQQmmU'  jQQQ@",
-	"#C0C0C0", // c1
+	"#C0C0C0",
 	"$+=<",
-	"#00FFFF", // c2
+	"#00FFFF",
 	"$QWQQ)mQQQ.mQQQC",
-	"#C0C0C0", // c1
+	"#C0C0C0",
 	"$+;",
-	"#00FFFF", // c2
+	"#00FFFF",
 	"$jWQQ@'",
-	// Начало строки 11: ${c2}   -$WQ8Y${c1}nI:   ${c2}QWQQwgQQWV${c1}`${c2}mWQQ.jQWQQgyyWW@!
-	"#00FFFF", // c2
+	"#00FFFF",
 	"   -$WQ8Y",
-	"#C0C0C0", // c1
+	"#C0C0C0",
 	"$nI:   ",
-	"#00FFFF", // c2
+	"#00FFFF",
 	"$QWQQwgQQWV",
-	"#C0C0C0", // c1
+	"#C0C0C0",
 	"$`",
-	"#00FFFF", // c2
+	"#00FFFF",
 	"$mWQQ.jQWQQgyyWW@!",
-	// Начало строки 12: ${c1}     -1vvnvv.     `~+++`        ++|+++
-	"#C0C0C0", // Возвращаемся к c1
+	"#C0C0C0",
 	"     -1vvnvv.     `~+++`        ++|+++",
 	"      +vnvnnv,                 `-|===",
 	"       +vnvnvns.           .      :=-",
