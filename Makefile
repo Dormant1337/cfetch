@@ -1,39 +1,36 @@
-# Makefile for cfetch
+CC = gcc
 
-SHELL := /bin/sh
+CFLAGS = -g -Wall
 
 PREFIX ?= /usr/local
-DESTDIR ?=
+BINDIR = $(PREFIX)/bin
 
-CC ?= cc
-DEFS ?= -D_GNU_SOURCE -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L
-CFLAGS ?= -O2 -Wall -Wextra -std=c11 $(DEFS)
-LDFLAGS ?=
 
-BIN ?= cfetch
+TARGET = cfetch
 
-DEFAULT_MAIN := $(shell ls -t main*.c 2>/dev/null | head -n1)
-MAIN ?= $(DEFAULT_MAIN)
-ifeq ($(strip $(MAIN)),)
-MAIN := main.c
-endif
+SOURCES = main.c fetch_hw.c fetch_sw.c utils.c
 
-all: $(BIN)
+OBJECTS = $(SOURCES:.c=.o)
 
-$(BIN): $(MAIN)
-	$(CC) $(CFLAGS) '$(MAIN)' -o '$(BIN)' $(LDFLAGS)
+
+all: $(TARGET)
+
+$(TARGET): $(OBJECTS)
+	$(CC) $(OBJECTS) -o $(TARGET)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f '$(BIN)'
+	rm -f $(OBJECTS) $(TARGET)
 
-install: $(BIN)
-	install -Dm755 '$(BIN)' '$(DESTDIR)$(PREFIX)/bin/$(BIN)'
+install: all
+	@echo "Installing cfetch to $(BINDIR)..."
+	@mkdir -p $(BINDIR)
+	@install -m 0755 $(TARGET) $(BINDIR)
+	@echo "Installation complete."
 
 uninstall:
-	rm -f '$(DESTDIR)$(PREFIX)/bin/$(BIN)'
-
-user-config:
-	mkdir -p "$$HOME/.config/cfetch"
-	touch "$$HOME/.config/cfetch/config"
-
-.PHONY: all clean install uninstall user-config
+	@echo "Removing cfetch from $(BINDIR)..."
+	@rm -f $(BINDIR)/$(TARGET)
+	@echo "Uninstallation complete."
