@@ -4,12 +4,63 @@
 #include <ctype.h>
 #include <unistd.h>
 
-/* Files includes. */
 #include "config.h"
 #include "utils.h"
 
 #define MAX_ASCII_FILE_LINES            1000
 #define MAX_ASCII_FILE_LINE_LENGTH      512
+
+CustomAsciiArt g_custom_art = { .lines = NULL, .line_count = 0, .capacity = 0 };
+
+
+void add_custom_ascii_line(const char* line) {
+    if (g_custom_art.line_count >= g_custom_art.capacity) {
+        int new_capacity = (g_custom_art.capacity == 0) ? 8 : g_custom_art.capacity * 2;
+        char **new_lines = realloc(g_custom_art.lines, new_capacity * sizeof(char*));
+        if (!new_lines) {
+            perror("realloc custom_ascii");
+            return;
+        }
+        g_custom_art.lines = new_lines;
+        g_custom_art.capacity = new_capacity;
+    }
+
+    g_custom_art.lines[g_custom_art.line_count] = xstrdup(line);
+    if (g_custom_art.lines[g_custom_art.line_count]) {
+        g_custom_art.line_count++;
+    }
+}
+
+void parse_custom_ascii_section(FILE *file) {
+    char buffer[512];
+
+    while (fgets(buffer, sizeof(buffer), file)) {
+        char *s = ltrim(buffer);
+        rtrim_inplace(s);
+
+        if (strcmp(s, "}") == 0 || strcmp(s, "NULL") == 0) {
+            break;
+        }
+
+        char *start_quote = strchr(s, '"');
+        char *end_quote = strrchr(s, '"');
+
+        if (start_quote && end_quote && start_quote != end_quote) {
+            *end_quote = '\0';
+            add_custom_ascii_line(start_quote + 1);
+        }
+    }
+
+    if (g_custom_art.lines) {
+        char **final_lines = realloc(g_custom_art.lines, (g_custom_art.line_count + 1) * sizeof(char*));
+        if (final_lines) {
+            g_custom_art.lines = final_lines;
+            g_custom_art.lines[g_custom_art.line_count] = NULL;
+            g_custom_art.capacity = g_custom_art.line_count + 1;
+        }
+    }
+}
+
 
 void cfg_init_defaults(struct cfetch_cfg *cfg)
 {
@@ -72,6 +123,14 @@ void cfg_free(struct cfetch_cfg *cfg)
 		free(cfg->lines[i].forced);
 	}
 	free(cfg->lines);
+
+    if (g_custom_art.lines) {
+        for (i = 0; i < g_custom_art.line_count; i++) {
+            free(g_custom_art.lines[i]);
+        }
+        free(g_custom_art.lines);
+    }
+
 	memset(cfg, 0, sizeof(*cfg));
 }
 
@@ -153,6 +212,7 @@ char *config_path(void)
 	return p;
 }
 
+
 int cfg_load(struct cfetch_cfg *cfg)
 {
 	char *path;
@@ -191,6 +251,11 @@ int cfg_load(struct cfetch_cfg *cfg)
 			sec = SEC_INFO;
 			continue;
 		}
+		if (strcmp(s, "custom_ascii {") == 0) {
+			parse_custom_ascii_section(f);
+			sec = SEC_NONE;
+			continue;   
+		}
 		if (strncmp(s, "line[", 5) == 0 && sec == SEC_INFO) {
 			int idx;
 			const char *brace;
@@ -217,7 +282,7 @@ int cfg_load(struct cfetch_cfg *cfg)
 		}
 
 		if (sec == SEC_GLOBAL) {
-			if (strncmp(s, "ascii_art", 9) == 0) {
+            if (strncmp(s, "ascii_art", 9) == 0) {
 				val = read_kv_value(s);
 				if (val) {
 					free(cfg->ascii_art);
@@ -267,7 +332,7 @@ int cfg_load(struct cfetch_cfg *cfg)
 			continue;
 		}
 		if (sec == SEC_LINE && cur_line >= 0) {
-			struct line_cfg *lc = &cfg->lines[cur_line];
+            struct line_cfg *lc = &cfg->lines[cur_line];
 
 			if (strncmp(s, "format", 6) == 0) {
 				val = read_kv_value(s);

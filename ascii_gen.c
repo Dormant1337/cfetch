@@ -891,10 +891,9 @@ const char **select_art_by_name(const char *name, char *distro)
 	else if (strcmp(l, "tux") == 0) ret = (const char **)tux_ascii;
 	else if (strcmp(l, "apple") == 0) ret = (const char **)apple_ascii;
 	else if (strcmp(l, "apple-mini") == 0) ret = (const char **)apple_ascii_mini;
-	else if (strcmp(l, "custom") == 0) ret = (const char **)custom_ascii;
-	else if (strcmp(l, "custom2") == 0) ret = (const char **)custom2_ascii;
 	else if (strcmp(l, "dota") == 0) ret = (const char **)dota_ascii;
 	else if (strcmp(l, "nixos") == 0) ret = (const char **)nixos_ascii;
+	else if (strcmp(l, "custom") == 0 && g_custom_art.line_count > 0) ret = (const char **)g_custom_art.lines;
 	else ret = (const char **)tux_ascii;
 
 	free(l);

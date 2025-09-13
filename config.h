@@ -2,6 +2,7 @@
 #define CONFIG_H
 
 #include <stddef.h> 
+#include <stdio.h>
 
 /*
  * =====================================================================================
@@ -76,6 +77,17 @@ void cfg_free(struct cfetch_cfg *cfg);
  *         The caller is responsible for freeing the returned string.
  */
 char *line_force_get_dup(const struct line_cfg *lc, const char *key);
+
+typedef struct {
+    char **lines;  
+    int line_count;  
+    int capacity;   
+} CustomAsciiArt;
+
+
+extern CustomAsciiArt g_custom_art;
+void add_custom_ascii_line(const char* line);
+void parse_custom_ascii_section(FILE *file);
 
 
 #endif // CONFIG_H
