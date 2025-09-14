@@ -269,6 +269,7 @@ const char *gentoo_ascii[] = {
 };
 
 const char *tux_ascii[] = {
+	"#ffffffff",
         "         _nnnn_        ",
         "        dGGGGMMb       ",
         "       @p~qp~~qMb      ",
