@@ -23,8 +23,9 @@ global {
 }
 ```
 
-The configuration is divided into three main sections:
+The configuration is divided into four main sections:
 *   `global {}`: Defines global settings for `cfetch`.
+*   `custom_ascii {}`: Defines a user-provided ASCII art.
 *   `info {}`: Acts as a container for individual information line configurations.
 *   `line[N] {}`: Configures the appearance and content of a specific information line.
 
@@ -34,7 +35,7 @@ The `global` section contains settings that apply to the overall `cfetch` output
 
 | Option                 | Type    | Default Value    | Description                                                                                                                                                                                                                                                                                                    |
 | :--------------------- | :------ | :--------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ascii_art`            | String  | `"auto"`         | Specifies the ASCII art to be displayed. <br><br> **Available options:** <br> `"auto"` (detects OS and uses corresponding art), `"arch"`, `"arch-classic"`, `"arch-alt"`, `"fedora"`, `"gentoo"`, `"redhat"`, `"rhel"`, `"mint"`, `"linuxmint"`, `"slackware"`, `"debian"`, `"tux"`, `"apple"`, `"apple-mini"`, `"custom"`, `"custom2"`, `"dota"`, `"nixos"`. |
+| `ascii_art`            | String  | `"auto"`         | Specifies the ASCII art to be displayed. <br><br> **Available options:** <br> `"auto"` (detects OS and uses corresponding art), `"arch"`, `"arch-classic"`, `"arch-alt"`, `"fedora"`, `"gentoo"`, `"redhat"`, `"rhel"`, `"mint"`, `"linuxmint"`, `"slackware"`, `"debian"`, `"tux"`, `"apple"`, `"apple-mini"`, `"custom"`, `"custom2"`, `"dota"`, `"nixos"`. <br><br> **Note:** Setting this to `"custom"` will load the art from the `custom_ascii {}` section. |
 | `default_label_color`  | Hex Color | `"#cccccc"`      | The default hexadecimal color code (e.g., `#RRGGBB`) for the labels of information lines if not specified otherwise.                                                                                                                                                                                             |
 | `default_data_color`   | Hex Color | `"#00ffff"`      | The default hexadecimal color code (e.g., `#RRGGBB`) for the data (placeholder values) of information lines if not specified otherwise.                                                                                                                                                                              |
 | `info_padding`         | Integer | `4`              | The number of spaces between the ASCII art and the start of the information block.                                                                                                                                                                                                                             |
@@ -43,11 +44,34 @@ The `global` section contains settings that apply to the overall `cfetch` output
 | `frame_title_soft`     | String  | `"Softwares"`    | The title displayed in the top section of the frame when `frame_type` is `doublebox`.                                                                                                                                                                                                                          |
 | `frame_title_hard`     | String  | `"Hardwares"`    | The title displayed in the middle section of the frame (separating software and hardware) when `frame_type` is `doublebox`.                                                                                                                                                                                    |
 
-### 4. Info Section (`info {}`)
+### 4. Custom ASCII Section (`custom_ascii {}`)
+
+This section allows you to define your own ASCII art directly in the configuration file. To activate it, you must set `ascii_art = "custom"` in the `global` section.
+
+The section consists of a list of comma-separated strings, where each string represents a line of the artwork. The list must end with `NULL`.
+
+The first string can be a hex color code (e.g., `"#RRGGBB"`) to set the color for the entire art.
+
+Example:
+```
+custom_ascii {
+    "#FFD700",          # Gold color for the art
+    "    .--.          ",
+    "   |o_o |         ",
+    "   |:_/ |         ",
+    "  //   \\ \\        ",
+    " (|     | )       ",
+    "/'\\_   _/`\\      ",
+    "\\___)=(___/      ",
+    NULL
+}
+```
+
+### 5. Info Section (`info {}`)
 
 The `info` section is a mandatory wrapper for defining individual information lines. All `line[N]` configurations must be placed within this section.
 
-### 5. Line Configuration Section (`line[N] {}`)
+### 6. Line Configuration Section (`line[N] {}`)
 
 Each `line[N]` section configures a specific line of information to be displayed. `N` is an integer representing the line's index (starting from 0). Lines are displayed in ascending order of their index.
 
@@ -61,7 +85,7 @@ Each `line[N]` section configures a specific line of information to be displayed
 | `force %KEY%=VALUE` | String    | `NULL`             | Allows overriding the value of a specific placeholder for this line. The `KEY` must match a placeholder name (e.g., `os`, `cpu`). <br>Example: `force %os%="My Custom OS"`                                                                                                                                   |
 | `arrange_box`       | Integer   | `0`                | Controls how the line is grouped when `frame_type` is `doublebox`. <br><br> **Available options:** <br> `0` (no specific grouping), `1` (assigns the line to the "Softwares" section), `2` (assigns the line to the "Hardwares" section).                                                                      |
 
-### 6. Placeholders
+### 7. Placeholders
 
 The `format` option in `line[N]` sections uses placeholders to dynamically insert system information. Placeholders are enclosed in percent signs (`%placeholder_name%`).
 
@@ -83,7 +107,7 @@ The `format` option in `line[N]` sections uses placeholders to dynamically inser
 | `%disk%`         | Used/Total disk space for root filesystem      | `50.1G / 236.7G`          |
 | `%packages%`     | Number of installed packages (per distro)      | `1234 pkgs`               |
 
-### 7. Color Format
+### 8. Color Format
 
 All color options (`default_label_color`, `default_data_color`, `color`, `label_color`, `data_color`, `frame_color`) accept hexadecimal color codes in the format `#RRGGBB`.
 *   `RR`: Red component (00-FF)
@@ -92,14 +116,14 @@ All color options (`default_label_color`, `default_data_color`, `color`, `label_
 
 Example: `#FF0000` for red, `#00FF00` for green, `#0000FF` for blue, `#FFFFFF` for white, `#000000` for black.
 
-### 8. Example Configuration
+### 9. Example Configuration
 
-Here's an example configuration demonstrating various options:
+Here's an example configuration demonstrating various options, including the new `custom_ascii` feature.
 
 ```
 # Global settings for cfetch
 global {
-    ascii_art = "arch-classic"
+    ascii_art = "custom"
     default_label_color = "#999999"
     default_data_color = "#00FFFF"
     info_padding = 4
@@ -107,6 +131,16 @@ global {
     frame_color = "#6A0DAD" # Purple frame
     frame_title_soft = "My System Software"
     frame_title_hard = "My System Hardware"
+}
+
+# User-defined ASCII art section
+custom_ascii {
+    "#999999",
+    "      /\\_/\\     ",
+    "     ( o.o )    ",
+    "      >  ^  <     ",
+    "    meow-meow!    ",
+    NULL
 }
 
 # Information lines
@@ -129,63 +163,27 @@ info {
         arrange_box = 1 # Group in Softwares section
     }
 
-    # Line 3: Packages
+    # Line 3: Shell
     line[3] {
-        format = "Packages: %packages%"
-        arrange_box = 1 # Group in Softwares section
-    }
-
-    # Line 4: Shell info, force a specific value for shell
-    line[4] {
         format = "Shell: %shell_info%"
-        force %shell_info%="My Zsh with Oh My Zsh!" # Override detected shell
         arrange_box = 1 # Group in Softwares section
     }
-
-    line[5] {
-        format = "WM: %wm%"
-        arrange_box = 1 # Group in Softwares section
-    }
-
-    # Line 6: Host (Motherboard)
-    line[6] {
-        format = "Host: %host%"
-        arrange_box = 2 # Group in Hardwares section
-    }
-
-    # Line 7: CPU
-    line[7] {
+    
+    # Line 4: CPU
+    line[4] {
         format = "CPU: %cpu%"
         arrange_box = 2 # Group in Hardwares section
     }
-
-    # Line 8: GPU
-    line[8] {
+    
+    # Line 5: GPU
+    line[5] {
         format = "GPU: %gpu%"
         arrange_box = 2 # Group in Hardwares section
     }
-
-    # Line 9: RAM
-    line[9] {
+    
+    # Line 6: RAM
+    line[6] {
         format = "RAM: %ram%"
-        arrange_box = 2 # Group in Hardwares section
-    }
-
-    # Line 10: Uptime
-    line[10] {
-        format = "Uptime: %uptime%"
-        arrange_box = 2 # Group in Hardwares section
-    }
-
-    # Line 11: Monitor information
-    line[11] {
-        format = "Monitor: %monitor%"
-        arrange_box = 2 # Group in Hardwares section
-    }
-
-    # Line 12: Disk usage
-    line[12] {
-        format = "Disk: %disk%"
         arrange_box = 2 # Group in Hardwares section
     }
 }
