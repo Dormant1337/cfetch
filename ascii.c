@@ -816,3 +816,25 @@ const char *void_ascii[] = {
 	"               -~|{*l}*|~",
 	NULL
 };
+
+
+const char* saturn_ascii[] = {
+	"#ffffffff",
+	"      ",
+        "                 _.u[[/;:,.             _.oo.",
+        "              .o888UU[[[/;:-.       .odMMMMMM'",
+        "             ON88888UU[[[/;::-.  .o@p^  MMM^",
+        "            dNMMNN888UU[[[/;:--.     .o@p^",
+        "           MMMMMMN888UU[[/;::-. o@p^",
+        "           NNMMMNN888UU[[[/~.o@p^",
+        "           888888888UU[[[/o@v0-..",
+        "          OI8888UU[[[/o@p^:--..",
+        "       .@^  YUU[[[/o@^:--..",
+        "     OMP     ^/o@p^;:::---..",
+        "  .dMMM    .o@^ ^;::---...",
+        " dMMMMMMM@^         ^^^^",
+        "YMMMUP^",
+        " ^^",
+	"     ",
+        NULL
+};

@@ -21,5 +21,6 @@ extern const char *dota_ascii[];
 extern const char *nixos_ascii[];
 extern const char *endeavour_ascii[];
 extern const char *void_ascii[];
+extern const char *saturn_ascii[];
 
 #endif

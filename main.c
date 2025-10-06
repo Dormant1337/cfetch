@@ -80,8 +80,9 @@ int main(int argc, char *argv[])
 		print_ascii_configured((const char **)endeavour_ascii, &cfg);
 	} else if (argc == 2 && strcmp(argv[1], "--void") == 0) {
 		print_ascii_configured((const char **)void_ascii, &cfg);
-	}
-	else {
+	} else if (argc == 2 && strcmp(argv[1], "--saturn") == 0) {
+		print_ascii_configured((const char **)saturn_ascii, &cfg);
+	} else {
 		fprintf(stderr, "Error: Invalid arguments.\n");
 		fprintf(stderr, "Usage: %s [no args -> config ascii_art] or flags: --arch | --redhat | --apple-mini | --fedora | --gentoo | --tux | --apple | --mint | --slackware | --debian | --arch-alt | --dota | --nixos | --ExportAscii <filename>\n", argv[0]);
 		cfg_free(&cfg);

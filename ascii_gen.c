@@ -894,6 +894,7 @@ const char **select_art_by_name(const char *name, char *distro)
 	else if (strcmp(l, "dota") == 0) ret = (const char **)dota_ascii;
 	else if (strcmp(l, "nixos") == 0) ret = (const char **)nixos_ascii;
 	else if (strcmp(l, "custom") == 0 && g_custom_art.line_count > 0) ret = (const char **)g_custom_art.lines;
+	else if (strcmp(l, "saturn") == 0) ret = (const char **)saturn_ascii;
 	else ret = (const char **)tux_ascii;
 
 	free(l);
