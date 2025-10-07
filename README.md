@@ -53,6 +53,7 @@
   ./cfetch --custom
   ./cfetch --dota
   ./cfetch --nixos
+  ./cfetch --saturn
 
 - Export ASCII from a text file to a C array:
   ./cfetch --ExportAscii path/to/art.txt > ascii_export.c
