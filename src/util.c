@@ -11,8 +11,18 @@ int info_count = 0;
 #include "ascii.h"
 #include "util.h"
 #include "fetch/hw.h"
+#include "fetch/sw.h"
 
+int check_end_newline(const char *str) {
+	size_t len = strlen(str);
+	if (len == 0) return 0;
 
+	if (str[len - 1] == '\n') return 1;
+
+	if (len >= 2 && str[len - 2] == '\\' && str[len - 1] == 'n') return 1;
+
+	return 0;
+}
 
 int utf8_strlen(const char *s, bool ignore_spaces) {
 	int count = 0;
@@ -52,16 +62,34 @@ void hex_printf(const char *hex, const char *format, ...) {
 	printf("\033[0m");
 }
 
+void copy_without_last_two(char *dest, const char *src) {
+	size_t len = strlen(src);
+	int to_cut = 0;
+
+	if (len > 0 && src[len - 1] == '\n') to_cut = 1;
+	else if (len >= 2 && src[len - 2] == '\\' && src[len - 1] == 'n') to_cut = 2;
+
+	if (len >= (size_t)to_cut) {
+		strncpy(dest, src, len - to_cut);
+		dest[len - to_cut] = '\0';
+	} else {
+		dest[0] = '\0';
+	}
+}
+
 void get_lengths_of_ascii(int *lenest_spaceless, int *lenest_space, const char *str) {
 	if (strcmp(str, "arch_linux-default") == 0) {
-		for(int i = 0; arch_linux_default[i] != NULL; i++) {
+		int current_width = 0;
+		for (int i = 0; arch_linux_default[i] != NULL; i++) {
 			if (check_hex(arch_linux_default[i])) continue;
 
-			if (utf8_strlen(arch_linux_default[i], true) > *lenest_spaceless) {
-				*lenest_spaceless = utf8_strlen(arch_linux_default[i], true);
-			}
-			if (utf8_strlen(arch_linux_default[i], false) > *lenest_space) {
-				*lenest_space = utf8_strlen(arch_linux_default[i], false);
+			char cleaned[512];
+			copy_without_last_two(cleaned, arch_linux_default[i]);
+			current_width += utf8_strlen(cleaned, false);
+
+			if (check_end_newline(arch_linux_default[i])) {
+				if (current_width > *lenest_space) *lenest_space = current_width;
+				current_width = 0;
 			}
 		}
 	}
@@ -110,6 +138,16 @@ void add_info_line(const char *fmt, ...) {
 void form_info_list() {
         char gpu_name[256];
         char cpu_name[256];
+        char host_name[256];
+        char uptime[64];
+        char memory[64];
+        char wm[128];
+        char username[128];
+        char hostname[128];
+        
+        get_hostname(hostname);
+        get_username(username);
+        add_info_line("%s@%s", username, hostname);
         
         int gpu_count = get_gpu_count();
         int cpu_count = get_cpu_count();
@@ -123,6 +161,22 @@ void form_info_list() {
                 get_cpu_name(cpu_name, i);
                 add_info_line("CPU: %s", cpu_name);
         }
+
+        get_host_name(host_name);
+        add_info_line("Host: %s", host_name);
+
+        get_uptime(uptime);
+        add_info_line("Uptime: %s", uptime);
+
+        get_memory(memory);
+        add_info_line("Memory: %s", memory);
+
+        get_wm(wm);
+        add_info_line("WM: %s", wm);
+
+
+
+
 
         
 }

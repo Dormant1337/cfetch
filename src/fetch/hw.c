@@ -130,8 +130,6 @@ void parse_cpu_model(char *s) {
 	while (p > s && isspace(*p)) *p-- = '\0';
 }
 
-
-
 void get_cpu_name(char *cpu, int number) {
 	FILE *fp = fopen("/proc/cpuinfo", "r");
 	if (!fp) {
@@ -229,4 +227,66 @@ int get_cpu_count(void) {
 
 	return (unique_count > 0) ? unique_count : 1;
 }
+
+void get_host_name(char *host) {
+	char vendor[128] = {0};
+	char product[128] = {0};
+	char *p;
+	FILE *f1 = fopen("/sys/class/dmi/id/board_vendor", "r");
+	FILE *f2 = fopen("/sys/class/dmi/id/board_name", "r");
+
+	if (!f1 || !f2) {
+		if (f1) fclose(f1);
+		if (f2) fclose(f2);
+		f1 = fopen("/sys/class/dmi/id/sys_vendor", "r");
+		f2 = fopen("/sys/class/dmi/id/product_name", "r");
+	}
+
+	if (f1 && f2) {
+		fgets(vendor, sizeof(vendor), f1);
+		fgets(product, sizeof(product), f2);
+		vendor[strcspn(vendor, "\n")] = 0;
+		product[strcspn(product, "\n")] = 0;
+
+		if ((p = strstr(vendor, " Technology"))) *p = '\0';
+		if ((p = strstr(vendor, " Inc")))       *p = '\0';
+		if ((p = strstr(vendor, " Corp")))      *p = '\0';
+		if ((p = strstr(vendor, " Co., Ltd")))  *p = '\0';
+		if ((p = strstr(vendor, " COMPUTER")))  *p = '\0';
+
+		if (strcmp(vendor, "ASUSTeK") == 0) strcpy(vendor, "ASUS");
+
+		sprintf(host, "%s %s", vendor, product);
+	} else {
+		strcpy(host, "Unknown");
+	}
+
+	if (f1) fclose(f1);
+	if (f2) fclose(f2);
+}
+
+void get_memory(char *memory) {
+	FILE *fp = fopen("/proc/meminfo", "r");
+	long total = 0, available = 0;
+	char line[256];
+
+	if (fp) {
+		while (fgets(line, sizeof(line), fp)) {
+			if (strncmp(line, "MemTotal:", 9) == 0)
+				sscanf(line + 9, "%ld", &total);
+			if (strncmp(line, "MemAvailable:", 13) == 0)
+				sscanf(line + 13, "%ld", &available);
+		}
+		fclose(fp);
+	}
+
+	if (total > 0) {
+		long used = (total - available) / 1024;
+		sprintf(memory, "%ldMiB / %ldMiB", used, total / 1024);
+	}
+}
+
+
+
+
 

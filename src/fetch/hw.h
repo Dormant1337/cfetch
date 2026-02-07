@@ -14,6 +14,9 @@ int  get_cpu_count(void);
 void parse_cpu_model(char *s);
 void get_cpu_name(char *cpu, int number);
 
+void get_host_name(char *host);
+void get_memory(char *memory);
+
 #ifdef __cplusplus
 }
 #endif

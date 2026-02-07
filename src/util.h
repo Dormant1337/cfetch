@@ -13,6 +13,8 @@ int check_hex(const char *str);
 void add_info_line(const char *fmt, ...);
 void free_info_list(void);
 void form_info_list(void);
+int check_end_newline(const char *str);
+void copy_without_last_two(char *dest, const char *src);
 
 
 #endif /* UTIL_H */
