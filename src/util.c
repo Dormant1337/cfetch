@@ -56,8 +56,14 @@ void get_lengths_of_ascii(int *lenest_spaceless, int *lenest_space, char *str) {
 }
 
 int check_hex(char *str) {
-        if (str[0] == '#') {
-                return 1;
-        }
-        return 0;
+	if (str[0] != '#') return 0;
+
+	size_t len = strlen(str);
+	
+	if (len > 0 && str[len - 1] == '\n') len--;
+
+	if (len == 7 || len == 4) {
+		return 1;
+	}
+	return 0;
 }
