@@ -1,7 +1,9 @@
+
 CC ?= gcc
 CFLAGS ?= -Wall -Wextra -O2 -g -Isrc
+LDFLAGS ?=
 
-SRC := $(wildcard src/*.c)
+SRC := $(shell find src -name '*.c')
 OBJ := $(patsubst src/%.c, build/%.o, $(SRC))
 DEPS := $(OBJ:.o=.d)
 
@@ -12,13 +14,10 @@ TARGET ?= cfetch
 all: $(TARGET)
 
 $(TARGET): $(OBJ)
-	$(CC) $(CFLAGS) -o $@ $^
-
-build/%.o: src/%.c | build
+	$(CC) $(LDFLAGS) -o $@ $^
+build/%.o: src/%.c
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
-
-build:
-	mkdir -p build
 
 -include $(DEPS)
 
@@ -29,5 +28,6 @@ distclean: clean
 	rm -f *~ .depend
 
 format:
-	clang-format -i src/*.c src/*.h
+	@find src -name '*.c' -o -name '*.h' | xargs -r clang-format -i
+
 

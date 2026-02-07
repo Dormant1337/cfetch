@@ -8,10 +8,14 @@ int rows, cols;
 
 int space_between_ascii_and_info = 1;
 
+
 #include "util.h"
 #include "ascii.h"
 
+
+
 void print_ascii(char *str) {
+        form_info_list();
         int line_count = 0;
         char saved_hex[64] = "#ffffff";
         char spacer_char[space_between_ascii_and_info + 1];
@@ -45,11 +49,15 @@ void print_ascii(char *str) {
                                 }
                                 hex_printf(saved_hex, "%s", spacer_char);
                                 line_count++;
-                                puts("1");
+                                if (line_count <= info_count) {
+                                        printf("%s", info_list[line_count - 1]);
+                                }
+                                printf("\n");
                         } else {
                                 strcpy(saved_hex, arch_linux_default[i]);
                         }
                 }
+                free_info_list();
                 
                 
         }
