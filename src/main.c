@@ -40,7 +40,7 @@ void print_ascii(char *str) {
                                 
                                 if (temp_len < len_est) {
                                         for (int j = 0; j < len_est - temp_len; j++) {
-                                                hex_printf(saved_hex, "%s", spacer_char);
+                                                hex_printf(saved_hex, " ");
                                         }
                                 }
                                 hex_printf(saved_hex, "%s", spacer_char);
