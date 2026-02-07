@@ -1,36 +1,33 @@
-CC = gcc
+CC ?= gcc
+CFLAGS ?= -Wall -Wextra -O2 -g -Isrc
 
-CFLAGS = -g -Wall
+SRC := $(wildcard src/*.c)
+OBJ := $(patsubst src/%.c, build/%.o, $(SRC))
+DEPS := $(OBJ:.o=.d)
 
-PREFIX ?= /usr/local
-BINDIR = $(PREFIX)/bin
+TARGET ?= cfetch
 
-
-TARGET = cfetch
-
-SOURCES = main.c config.c fetch_hw.c fetch_sw.c utils.c ascii_gen.c ascii.c
-
-OBJECTS = $(SOURCES:.c=.o)
-
+.PHONY: all clean distclean format
 
 all: $(TARGET)
 
-$(TARGET): $(OBJECTS)
-	$(CC) $(OBJECTS) -o $(TARGET)
+$(TARGET): $(OBJ)
+	$(CC) $(CFLAGS) -o $@ $^
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+build/%.o: src/%.c | build
+	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+
+build:
+	mkdir -p build
+
+-include $(DEPS)
 
 clean:
-	rm -f $(OBJECTS) $(TARGET)
+	rm -rf build $(TARGET)
 
-install: all
-	@echo "Installing cfetch to $(BINDIR)..."
-	@mkdir -p $(BINDIR)
-	@install -m 0755 $(TARGET) $(BINDIR)
-	@echo "Installation complete."
+distclean: clean
+	rm -f *~ .depend
 
-uninstall:
-	@echo "Removing cfetch from $(BINDIR)..."
-	@rm -f $(BINDIR)/$(TARGET)
-	@echo "Uninstallation complete."
+format:
+	clang-format -i src/*.c src/*.h
+
