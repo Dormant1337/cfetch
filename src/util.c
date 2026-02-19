@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 char **info_list = NULL;
 int info_count = 0;
@@ -96,16 +97,12 @@ void get_lengths_of_ascii(int *lenest_spaceless, int *lenest_space, const char *
 }
 
 int check_hex(const char *str) {
-	if (str[0] != '#') return 0;
-
-	size_t len = strlen(str);
-	
-	if (len > 0 && str[len - 1] == '\n') len--;
-
-	if (len == 7 || len == 4) {
-		return 1;
+	if (!str || str[0] != '#') return 0;
+	int len = 0;
+	while (str[len] != '\0' && !isspace((unsigned char)str[len])) {
+		len++;
 	}
-	return 0;
+	return (len == 7 || len == 4);
 }
 
 void free_info_list(void) {
@@ -155,7 +152,10 @@ void form_info_list() {
         
         get_hostname(hostname);
         get_username(username);
+
+        add_info_line("#ff0000");
         add_info_line("%s@%s", username, hostname);
+        add_info_line("#FFFFFF");
         
         int gpu_count = get_gpu_count();
         int cpu_count = get_cpu_count();

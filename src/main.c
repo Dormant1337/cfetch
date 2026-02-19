@@ -20,12 +20,6 @@ void print_ascii(char *str) {
 	int current_line_width = 0;
 	char saved_hex[64] = "#ffffff";
 	char saved_hex_info[64] = "#ffffff";
-	char spacer_char[space_between_ascii_and_info + 1];
-
-	if (space_between_ascii_and_info > 0) {
-		for (int i = 0; i < space_between_ascii_and_info; i++) spacer_char[i] = ' ';
-		spacer_char[space_between_ascii_and_info] = '\0';
-	}
 
 	int lenest_spaceless = 0, lenest_space = 0;
 	get_lengths_of_ascii(&lenest_spaceless, &lenest_space, str);
@@ -34,7 +28,9 @@ void print_ascii(char *str) {
 	if (strcmp(str, "arch_linux-default") == 0) {
 		for (int i = 0; arch_linux_default[i] != NULL; i++) {
 			if (check_hex(arch_linux_default[i])) {
-				strcpy(saved_hex, arch_linux_default[i]);
+				char clean_hex[64];
+				sscanf(arch_linux_default[i], "%s", clean_hex);
+				strcpy(saved_hex, clean_hex);
 				continue;
 			}
 
@@ -44,16 +40,23 @@ void print_ascii(char *str) {
 				hex_printf(saved_hex, "%s", temp_str);
 				current_line_width += utf8_strlen(temp_str, false);
 
-				for (int j = 0; j < (len_est - current_line_width); j++) printf(" ");
-				
-				printf("%s", spacer_char);
+				int padding = len_est - current_line_width;
+				for (int j = 0; j < padding; j++) printf(" ");
+				for (int j = 0; j < space_between_ascii_and_info; j++) printf(" ");
 
-				if (line_count < info_count) {
+				while (line_count < info_count && info_list[line_count] != NULL && check_hex(info_list[line_count])) {
+					char clean_hex[64];
+					sscanf(info_list[line_count], "%s", clean_hex);
+					strcpy(saved_hex_info, clean_hex);
+					line_count++;
+				}
+
+				if (line_count < info_count && info_list[line_count] != NULL) {
 					hex_printf(saved_hex_info, "%s", info_list[line_count]);
+					line_count++;
 				}
 
 				printf("\n");
-				line_count++;
 				current_line_width = 0;
 			} else {
 				hex_printf(saved_hex, "%s", arch_linux_default[i]);
@@ -61,6 +64,24 @@ void print_ascii(char *str) {
 			}
 		}
 	}
+
+	while (line_count < info_count) {
+		for (int j = 0; j < len_est + space_between_ascii_and_info; j++) printf(" ");
+
+		while (line_count < info_count && info_list[line_count] != NULL && check_hex(info_list[line_count])) {
+			char clean_hex[64];
+			sscanf(info_list[line_count], "%s", clean_hex);
+			strcpy(saved_hex_info, clean_hex);
+			line_count++;
+		}
+
+		if (line_count < info_count && info_list[line_count] != NULL) {
+			hex_printf(saved_hex_info, "%s", info_list[line_count]);
+			line_count++;
+		}
+		printf("\n");
+	}
+
 	free_info_list();
 }
 
