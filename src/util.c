@@ -145,6 +145,14 @@ void form_info_list() {
         char username[128];
         char hostname[128];
         
+        char os[256] = {0}, kernel[256] = {0}, shell[64] = {0}, monitor[128] = {0}, terminal[64] = {0};
+
+        get_os(os);
+	get_kernel(kernel);
+	get_shell(shell);
+	get_monitor(monitor);
+	get_terminal(terminal);
+        
         get_hostname(hostname);
         get_username(username);
         add_info_line("%s@%s", username, hostname);
@@ -154,25 +162,50 @@ void form_info_list() {
 
         for (int i = 0; i < gpu_count; i++) {
                 get_gpu_name(gpu_name, i);
-                add_info_line("GPU: %s", gpu_name);
+                add_info_line("GPU:      %s", gpu_name);
         }
 
         for (int i = 0; i < cpu_count; i++) {
                 get_cpu_name(cpu_name, i);
-                add_info_line("CPU: %s", cpu_name);
+                add_info_line("CPU:      %s", cpu_name);
         }
 
         get_host_name(host_name);
-        add_info_line("Host: %s", host_name);
+        add_info_line("Host:     %s", host_name);
 
         get_uptime(uptime);
-        add_info_line("Uptime: %s", uptime);
+        add_info_line("Uptime:   %s", uptime);
 
         get_memory(memory);
-        add_info_line("Memory: %s", memory);
+        add_info_line("Memory:   %s", memory);
 
         get_wm(wm);
-        add_info_line("WM: %s", wm);
+        add_info_line("WM:       %s", wm);
+
+        add_info_line("OS:       %s", os);
+	add_info_line("Kernel:   %s", kernel);
+	add_info_line("Packages: %d", get_package_count());
+	add_info_line("Shell:    %s", shell);
+	add_info_line("Monitor:  %s", monitor);
+	add_info_line("Terminal: %s", terminal);
+
+        int disk_count = get_disk_count();
+        
+        char disk_name[256];
+        char disk_storage[64];
+        char disk_free[64];
+        char disk_occupied[64];
+        char disk_percent[16];
+        for (int i = 0; i < disk_count - 1; i++) {
+                if (i < disk_count) {
+                        get_disk_name(disk_name, i);
+                        get_disk_storage(disk_storage, i);
+                        get_disk_free(disk_free, i);
+                        get_disk_occupied(disk_occupied, i);
+                        get_disk_percent(disk_percent, i);
+                        add_info_line("Disk %d:   %s - %s total, %s free (%s used)", i + 1, disk_name, disk_storage, disk_free, disk_percent);
+                }
+        }
 
 
 

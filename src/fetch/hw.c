@@ -1,3 +1,5 @@
+#define _DEFAULT_SOURCE
+
 #include <stdio.h>
 #include <dirent.h>
 #include <string.h>
@@ -5,6 +7,63 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <sys/statvfs.h>
+#include <mntent.h>
+
+void format_size(char *output, unsigned long long bytes) {
+	double size = bytes;
+	const char *units[] = {"B", "KB", "MB", "GB", "TB"};
+	int i = 0;
+	while (size >= 1024 && i < 4) {
+		size /= 1024;
+		i++;
+	}
+	sprintf(output, "%.1f %s", size, units[i]);
+}
+
+static int get_device_name(int number, char *dev_name) {
+	DIR *dir = opendir("/sys/block");
+	if (!dir) return 0;
+	struct dirent *entry;
+	int current = 0;
+	int found = 0;
+	while ((entry = readdir(dir)) != NULL) {
+		if (entry->d_name[0] == '.') continue;
+		if (strncmp(entry->d_name, "loop", 4) == 0) continue;
+		if (strncmp(entry->d_name, "ram", 3) == 0) continue;
+		if (current == number) {
+			strcpy(dev_name, entry->d_name);
+			found = 1;
+			break;
+		}
+		current++;
+	}
+	closedir(dir);
+	return found;
+}
+
+static int get_mount_stats(int number, struct statvfs *vfs) {
+	char dev_name[64];
+	if (!get_device_name(number, dev_name)) return 0;
+
+	FILE *mtab = setmntent("/proc/mounts", "r");
+	if (!mtab) return 0;
+
+	struct mntent *ent;
+	char target_dev[128];
+	snprintf(target_dev, sizeof(target_dev), "/dev/%s", dev_name);
+
+	while ((ent = getmntent(mtab)) != NULL) {
+		if (strstr(ent->mnt_fsname, target_dev) == ent->mnt_fsname) {
+			if (statvfs(ent->mnt_dir, vfs) == 0) {
+				endmntent(mtab);
+				return 1;
+			}
+		}
+	}
+	endmntent(mtab);
+	return 0;
+}
 
 int get_gpu_count(void) {
         int count = 0;
@@ -286,7 +345,130 @@ void get_memory(char *memory) {
 	}
 }
 
+void get_monitor(char *monitor) {
+	FILE *fp = popen("xrandr --current 2>/dev/null | grep '*' | head -n1", "r");
+	if (fp) {
+		char line[256];
+		if (fgets(line, sizeof(line), fp)) {
+			char res[64], hz[64];
+			sscanf(line, " %s %s", res, hz);
+			for (int i = 0; hz[i]; i++) if (hz[i] == '*') hz[i] = '\0';
+			for (int i = 0; hz[i]; i++) if (hz[i] == '+') hz[i] = '\0';
+			sprintf(monitor, "%s @ %sHz", res, hz);
+		} else {
+			strcpy(monitor, "Unknown");
+		}
+		pclose(fp);
+	} else {
+		strcpy(monitor, "Unknown");
+	}
+}
 
+int get_disk_count(void) {
+	int count = 0;
+	DIR *dir = opendir("/sys/block");
+	if (!dir) return 0;
 
+	struct dirent *entry;
+	while ((entry = readdir(dir)) != NULL) {
+		if (entry->d_name[0] == '.') continue;
+		if (strncmp(entry->d_name, "loop", 4) == 0) continue;
+		if (strncmp(entry->d_name, "ram", 3) == 0) continue;
+		count++;
+	}
 
+	closedir(dir);
+	return count;
+}
 
+void get_disk_name(char *disk, int number) {
+	DIR *dir = opendir("/sys/block");
+	if (!dir) {
+		strcpy(disk, "Unknown");
+		return;
+	}
+
+	struct dirent *entry;
+	int current = 0;
+	while ((entry = readdir(dir)) != NULL) {
+		if (entry->d_name[0] == '.') continue;
+		if (strncmp(entry->d_name, "loop", 4) == 0) continue;
+		if (strncmp(entry->d_name, "ram", 3) == 0) continue;
+
+		if (current == number) {
+			char path[512];
+			char buf[256] = {0};
+			FILE *fp;
+
+			snprintf(path, sizeof(path), "/sys/block/%s/device/model", entry->d_name);
+			fp = fopen(path, "r");
+			if (!fp) {
+				snprintf(path, sizeof(path), "/sys/block/%s/model", entry->d_name);
+				fp = fopen(path, "r");
+			}
+
+			if (fp) {
+				if (fgets(buf, sizeof(buf), fp)) {
+					buf[strcspn(buf, "\n")] = 0;
+					char *end = buf + strlen(buf) - 1;
+					while (end > buf && isspace((unsigned char)*end)) *end-- = '\0';
+					char *start = buf;
+					while (*start && isspace((unsigned char)*start)) start++;
+					strcpy(disk, start);
+				}
+				fclose(fp);
+			} else {
+				strcpy(disk, entry->d_name);
+			}
+			break;
+		}
+		current++;
+	}
+
+	closedir(dir);
+}
+
+void get_disk_storage(char *output, int number) {
+	struct statvfs vfs;
+	if (get_mount_stats(number, &vfs)) {
+		format_size(output, (unsigned long long)vfs.f_blocks * vfs.f_frsize);
+	} else {
+		strcpy(output, "N/A");
+	}
+}
+
+void get_disk_free(char *output, int number) {
+	struct statvfs vfs;
+	if (get_mount_stats(number, &vfs)) {
+		format_size(output, (unsigned long long)vfs.f_bavail * vfs.f_frsize);
+	} else {
+		strcpy(output, "N/A");
+	}
+}
+
+void get_disk_occupied(char *output, int number) {
+	struct statvfs vfs;
+	if (get_mount_stats(number, &vfs)) {
+		unsigned long long total = (unsigned long long)vfs.f_blocks * vfs.f_frsize;
+		unsigned long long free = (unsigned long long)vfs.f_bavail * vfs.f_frsize;
+		format_size(output, total - free);
+	} else {
+		strcpy(output, "N/A");
+	}
+}
+
+void get_disk_percent(char *output, int number) {
+	struct statvfs vfs;
+	if (get_mount_stats(number, &vfs)) {
+		unsigned long long total = vfs.f_blocks;
+		unsigned long long used = vfs.f_blocks - vfs.f_bfree;
+		if (total > 0) {
+			double percent = (double)used / total * 100.0;
+			sprintf(output, "%.1f%%", percent);
+		} else {
+			strcpy(output, "0%");
+		}
+	} else {
+		strcpy(output, "N/A");
+	}
+}
