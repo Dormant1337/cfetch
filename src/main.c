@@ -5,79 +5,102 @@
 #include <stdarg.h>
 
 int rows, cols;
-
 int space_between_ascii_and_info = 1;
-
 
 #include "util.h"
 #include "ascii.h"
 
-
-
 void print_ascii(char *str) {
 	form_info_list();
-	int line_count = 0;
-	int current_line_width = 0;
-	char saved_hex[64] = "#ffffff";
-	char saved_hex_info[64] = "#ffffff";
+	
+	int max_width = 0;
+	if (strcmp(str, "arch_linux-default") == 0) {
+		int current_w = 0;
+		for (int i = 0; arch_linux_default[i] != NULL; i++) {
+			if (check_hex(arch_linux_default[i])) continue;
+			for (int j = 0; arch_linux_default[i][j] != '\0'; j++) {
+				if (arch_linux_default[i][j] == '\n') {
+					if (current_w > max_width) max_width = current_w;
+					current_w = 0;
+				} else {
+					current_w++;
+				}
+			}
+		}
+		if (current_w > max_width) max_width = current_w;
+	}
 
-	int lenest_spaceless = 0, lenest_space = 0;
-	get_lengths_of_ascii(&lenest_spaceless, &lenest_space, str);
-	int len_est = lenest_space;
+	int info_line = 0;
+	char ascii_color[64] = "#ffffff";
+	char info_color[64] = "#ffffff";
+	int current_line_width = 0;
+	char line_buffer[1024];
+	line_buffer[0] = '\0';
 
 	if (strcmp(str, "arch_linux-default") == 0) {
 		for (int i = 0; arch_linux_default[i] != NULL; i++) {
 			if (check_hex(arch_linux_default[i])) {
 				char clean_hex[64];
 				sscanf(arch_linux_default[i], "%s", clean_hex);
-				strcpy(saved_hex, clean_hex);
+				strcpy(ascii_color, clean_hex);
 				continue;
 			}
 
-			char temp_str[512];
-			if (check_end_newline(arch_linux_default[i])) {
-				copy_without_last_two(temp_str, arch_linux_default[i]);
-				hex_printf(saved_hex, "%s", temp_str);
-				current_line_width += utf8_strlen(temp_str, false);
+			const char *ptr = arch_linux_default[i];
+			char temp_char[2] = {0, 0};
 
-				int padding = len_est - current_line_width;
-				for (int j = 0; j < padding; j++) printf(" ");
-				for (int j = 0; j < space_between_ascii_and_info; j++) printf(" ");
+			while (*ptr) {
+				if (*ptr == '\n') {
+					hex_printf(ascii_color, "%s", line_buffer);
+					current_line_width += utf8_strlen(line_buffer, false);
+					line_buffer[0] = '\0';
 
-				while (line_count < info_count && info_list[line_count] != NULL && check_hex(info_list[line_count])) {
-					char clean_hex[64];
-					sscanf(info_list[line_count], "%s", clean_hex);
-					strcpy(saved_hex_info, clean_hex);
-					line_count++;
+					int padding = max_width - current_line_width + space_between_ascii_and_info;
+					for (int k = 0; k < padding; k++) printf(" ");
+
+					while (info_line < info_count && info_list[info_line] != NULL && check_hex(info_list[info_line])) {
+						char clean_hex[64];
+						sscanf(info_list[info_line], "%s", clean_hex);
+						strcpy(info_color, clean_hex);
+						info_line++;
+					}
+
+					if (info_line < info_count && info_list[info_line] != NULL) {
+						hex_printf(info_color, "%s", info_list[info_line]);
+						info_line++;
+					}
+
+					printf("\n");
+					current_line_width = 0;
+				} else {
+					temp_char[0] = *ptr;
+					strcat(line_buffer, temp_char);
 				}
-
-				if (line_count < info_count && info_list[line_count] != NULL) {
-					hex_printf(saved_hex_info, "%s", info_list[line_count]);
-					line_count++;
-				}
-
-				printf("\n");
-				current_line_width = 0;
-			} else {
-				hex_printf(saved_hex, "%s", arch_linux_default[i]);
-				current_line_width += utf8_strlen(arch_linux_default[i], false);
+				ptr++;
+			}
+			
+			if (line_buffer[0] != '\0') {
+				hex_printf(ascii_color, "%s", line_buffer);
+				current_line_width += utf8_strlen(line_buffer, false);
+				line_buffer[0] = '\0';
 			}
 		}
 	}
 
-	while (line_count < info_count) {
-		for (int j = 0; j < len_est + space_between_ascii_and_info; j++) printf(" ");
+	while (info_line < info_count) {
+		int padding = max_width + space_between_ascii_and_info;
+		for (int k = 0; k < padding; k++) printf(" ");
 
-		while (line_count < info_count && info_list[line_count] != NULL && check_hex(info_list[line_count])) {
+		while (info_line < info_count && info_list[info_line] != NULL && check_hex(info_list[info_line])) {
 			char clean_hex[64];
-			sscanf(info_list[line_count], "%s", clean_hex);
-			strcpy(saved_hex_info, clean_hex);
-			line_count++;
+			sscanf(info_list[info_line], "%s", clean_hex);
+			strcpy(info_color, clean_hex);
+			info_line++;
 		}
 
-		if (line_count < info_count && info_list[line_count] != NULL) {
-			hex_printf(saved_hex_info, "%s", info_list[line_count]);
-			line_count++;
+		if (info_line < info_count && info_list[info_line] != NULL) {
+			hex_printf(info_color, "%s", info_list[info_line]);
+			info_line++;
 		}
 		printf("\n");
 	}
@@ -86,6 +109,6 @@ void print_ascii(char *str) {
 }
 
 int main() {
-        print_ascii("arch_linux-default");
-        return 0;
+	print_ascii("arch_linux-default");
+	return 0;
 }

@@ -4,7 +4,8 @@
 
 const char* arch_linux_default[] = {
         "#00FFFF",
-         "                   -`\n",
+         "                   -",
+         "`\n"
          "                  .o+`\n",
          "                 `ooo/\n",
          "                `+oooo:\n",
