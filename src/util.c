@@ -154,40 +154,82 @@ void form_info_list() {
         get_username(username);
 
         add_info_line("#ff0000");
-        add_info_line("%s@%s", username, hostname);
-        add_info_line("#FFFFFF");
+        add_info_line("%s@", username);
+        add_info_line("#ffffff");
+        add_info_line("%s\n", hostname);
         
         int gpu_count = get_gpu_count();
         int cpu_count = get_cpu_count();
 
         for (int i = 0; i < gpu_count; i++) {
                 get_gpu_name(gpu_name, i);
-                add_info_line("GPU:      %s", gpu_name);
+                add_info_line("#ff0000");
+                add_info_line("GPU:      ");
+                add_info_line("#ffffff");
+                add_info_line("%s\n", gpu_name);
         }
 
         for (int i = 0; i < cpu_count; i++) {
                 get_cpu_name(cpu_name, i);
-                add_info_line("CPU:      %s", cpu_name);
+                add_info_line("#ff0000");
+                add_info_line("CPU:      ");
+                add_info_line("#ffffff");
+                add_info_line("%s\n", cpu_name);
         }
 
         get_host_name(host_name);
-        add_info_line("Host:     %s", host_name);
+        add_info_line("#ff0000");
+        add_info_line("Host:     ");
+        add_info_line("#ffffff");
+        add_info_line("%s\n", host_name);
 
         get_uptime(uptime);
-        add_info_line("Uptime:   %s", uptime);
+        add_info_line("#ff0000");
+        add_info_line("Uptime:   ");
+        add_info_line("#ffffff");
+        add_info_line("%s\n", uptime);
 
         get_memory(memory);
-        add_info_line("Memory:   %s", memory);
+        add_info_line("#ff0000");
+        add_info_line("Memory:   ");
+        add_info_line("#ffffff");
+        add_info_line("%s\n", memory);
 
         get_wm(wm);
-        add_info_line("WM:       %s", wm);
+        add_info_line("#ff0000");
+        add_info_line("WM:       ");
+        add_info_line("#ffffff");
+        add_info_line("%s\n", wm);
 
-        add_info_line("OS:       %s", os);
-	add_info_line("Kernel:   %s", kernel);
-	add_info_line("Packages: %d", get_package_count());
-	add_info_line("Shell:    %s", shell);
-	add_info_line("Monitor:  %s", monitor);
-	add_info_line("Terminal: %s", terminal);
+        add_info_line("#ff0000");
+        add_info_line("OS:       ");
+        add_info_line("#ffffff");
+        add_info_line("%s\n", os);
+
+        add_info_line("#ff0000");
+	add_info_line("Kernel:   ");
+        add_info_line("#ffffff");
+	add_info_line("%s\n", kernel);
+
+        add_info_line("#ff0000");
+	add_info_line("Packages: ");
+        add_info_line("#ffffff");
+	add_info_line("%d\n", get_package_count());
+
+        add_info_line("#ff0000");
+	add_info_line("Shell:    ");
+        add_info_line("#ffffff");
+	add_info_line("%s\n", shell);
+
+        add_info_line("#ff0000");
+	add_info_line("Monitor:  ");
+        add_info_line("#ffffff");
+	add_info_line("%s\n", monitor);
+
+        add_info_line("#ff0000");
+	add_info_line("Terminal: ");
+        add_info_line("#ffffff");
+	add_info_line("%s\n", terminal);
 
         int disk_count = get_disk_count();
         
@@ -203,13 +245,10 @@ void form_info_list() {
                         get_disk_free(disk_free, i);
                         get_disk_occupied(disk_occupied, i);
                         get_disk_percent(disk_percent, i);
-                        add_info_line("Disk %d:   %s - %s total, %s free (%s used)", i + 1, disk_name, disk_storage, disk_free, disk_percent);
+                        add_info_line("#ff0000");
+                        add_info_line("Disk %d:   ", i + 1);
+                        add_info_line("#ffffff");
+                        add_info_line("%s - %s total, %s free (%s used)\n", disk_name, disk_storage, disk_free, disk_percent);
                 }
         }
-
-
-
-
-
-        
 }

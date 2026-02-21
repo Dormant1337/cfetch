@@ -58,16 +58,29 @@ void print_ascii(char *str) {
 					int padding = max_width - current_line_width + space_between_ascii_and_info;
 					for (int k = 0; k < padding; k++) printf(" ");
 
-					while (info_line < info_count && info_list[info_line] != NULL && check_hex(info_list[info_line])) {
-						char clean_hex[64];
-						sscanf(info_list[info_line], "%s", clean_hex);
-						strcpy(info_color, clean_hex);
-						info_line++;
-					}
+					bool line_complete = false;
+					while (info_line < info_count && !line_complete) {
+						if (info_list[info_line] != NULL && check_hex(info_list[info_line])) {
+							char clean_hex[64];
+							sscanf(info_list[info_line], "%s", clean_hex);
+							strcpy(info_color, clean_hex);
+							info_line++;
+							continue;
+						}
 
-					if (info_line < info_count && info_list[info_line] != NULL) {
-						hex_printf(info_color, "%s", info_list[info_line]);
-						info_line++;
+						if (info_list[info_line] != NULL) {
+							if (check_end_newline(info_list[info_line])) {
+								char clean_str[1024];
+								copy_without_last_two(clean_str, info_list[info_line]);
+								hex_printf(info_color, "%s", clean_str);
+								line_complete = true;
+							} else {
+								hex_printf(info_color, "%s", info_list[info_line]);
+							}
+							info_line++;
+						} else {
+							line_complete = true;
+						}
 					}
 
 					printf("\n");
@@ -91,16 +104,29 @@ void print_ascii(char *str) {
 		int padding = max_width + space_between_ascii_and_info;
 		for (int k = 0; k < padding; k++) printf(" ");
 
-		while (info_line < info_count && info_list[info_line] != NULL && check_hex(info_list[info_line])) {
-			char clean_hex[64];
-			sscanf(info_list[info_line], "%s", clean_hex);
-			strcpy(info_color, clean_hex);
-			info_line++;
-		}
+		bool line_complete = false;
+		while (info_line < info_count && !line_complete) {
+			if (info_list[info_line] != NULL && check_hex(info_list[info_line])) {
+				char clean_hex[64];
+				sscanf(info_list[info_line], "%s", clean_hex);
+				strcpy(info_color, clean_hex);
+				info_line++;
+				continue;
+			}
 
-		if (info_line < info_count && info_list[info_line] != NULL) {
-			hex_printf(info_color, "%s", info_list[info_line]);
-			info_line++;
+			if (info_list[info_line] != NULL) {
+				if (check_end_newline(info_list[info_line])) {
+					char clean_str[1024];
+					copy_without_last_two(clean_str, info_list[info_line]);
+					hex_printf(info_color, "%s", clean_str);
+					line_complete = true;
+				} else {
+					hex_printf(info_color, "%s", info_list[info_line]);
+				}
+				info_line++;
+			} else {
+				line_complete = true;
+			}
 		}
 		printf("\n");
 	}
