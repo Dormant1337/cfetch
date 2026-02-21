@@ -38,7 +38,7 @@ void print_ascii(char *str) {
 	char ascii_color[64] = "#ffffff";
 	char info_color[64] = "#ffffff";
 	
-	int current_ascii_width = 0; // Width of just the ASCII part for padding calc
+	int current_ascii_width = 0; 
 	char line_buffer[1024];
 	line_buffer[0] = '\0';
 
@@ -100,11 +100,6 @@ void print_ascii(char *str) {
 					strcat(line_buffer, temp_char);
 				}
 				ptr++;
-			}
-			
-			if (line_buffer[0] != '\0') {
-				current_ascii_width += utf8_strlen(line_buffer, false);
-				line_buffer[0] = '\0';
 			}
 		}
 	}
