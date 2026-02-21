@@ -15,6 +15,10 @@ void free_info_list(void);
 void form_info_list(void);
 int check_end_newline(const char *str);
 void copy_without_last_two(char *dest, const char *src);
+int get_term_width(void);
+void utf8_ncpy(char *dest, const char *src, int n);
+void print_clipped(const char *color, const char *text, int *current_w, int max_w, bool *dots);
+
 
 
 #endif /* UTIL_H */

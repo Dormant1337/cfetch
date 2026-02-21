@@ -4,6 +4,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
 
 char **info_list = NULL;
 int info_count = 0;
@@ -13,6 +15,14 @@ int info_count = 0;
 #include "util.h"
 #include "fetch/hw.h"
 #include "fetch/sw.h"
+
+int get_term_width() {
+	struct winsize w;
+	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) == -1) {
+		return 80;
+	}
+	return w.ws_col;
+}
 
 int check_end_newline(const char *str) {
 	size_t len = strlen(str);
@@ -251,4 +261,45 @@ void form_info_list() {
                         add_info_line("%s - %s total, %s free (%s used)\n", disk_name, disk_storage, disk_free, disk_percent);
                 }
         }
+}
+
+void utf8_ncpy(char *dest, const char *src, int n) {
+	int count = 0;
+	int i = 0;
+	int j = 0;
+	while (src[i] && count < n) {
+		dest[j++] = src[i++];
+		while (src[i] && (src[i] & 0xC0) == 0x80) {
+			dest[j++] = src[i++];
+		}
+		count++;
+	}
+	dest[j] = '\0';
+}
+
+void print_clipped(const char *color, const char *text, int *current_w, int max_w, bool *dots) {
+	if (*dots) return;
+	
+	int len = utf8_strlen(text, false);
+	int limit = max_w - 3;
+	
+	if (*current_w + len <= max_w) {
+		if (color) hex_printf(color, "%s", text);
+		else printf("%s", text);
+		*current_w += len;
+		return;
+	}
+	
+	int available = limit - *current_w;
+	if (available < 0) available = 0;
+	
+	char buf[1024];
+	utf8_ncpy(buf, text, available);
+	
+	if (color) hex_printf(color, "%s", buf);
+	else printf("%s", buf);
+	
+	printf("...");
+	*dots = true;
+	*current_w = max_w;
 }
