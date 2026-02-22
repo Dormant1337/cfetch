@@ -89,6 +89,7 @@ void copy_without_last_two(char *dest, const char *src) {
 }
 
 void get_lengths_of_ascii(int *lenest_spaceless, int *lenest_space, const char *str) {
+	(void)lenest_spaceless; 
 	if (strcmp(str, "arch_linux-default") == 0) {
 		int current_width = 0;
 		for (int i = 0; arch_linux_default[i] != NULL; i++) {
@@ -281,7 +282,7 @@ void print_clipped(const char *color, const char *text, int *current_w, int max_
 	if (*dots) return;
 	
 	int len = utf8_strlen(text, false);
-	int limit = max_w - 3;
+	int limit = max_w - 3; 
 	
 	if (*current_w + len <= max_w) {
 		if (color) hex_printf(color, "%s", text);

@@ -5,11 +5,10 @@
 #include <stdarg.h>
 
 int rows, cols;
-int space_between_ascii_and_info = 1;
-bool auto_shorten = true;
 
 #include "util.h"
 #include "ascii.h"
+#include "config/config.h"
 
 void print_ascii(char *str) {
 	form_info_list();
@@ -144,6 +143,7 @@ void print_ascii(char *str) {
 }
 
 int main() {
+	init_config();
 	print_ascii("arch_linux-default");
 	return 0;
 }

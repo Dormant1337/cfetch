@@ -1,4 +1,3 @@
-
 CC ?= gcc
 CFLAGS ?= -Wall -Wextra -O2 -g -Isrc
 LDFLAGS ?=
@@ -15,6 +14,7 @@ all: $(TARGET)
 
 $(TARGET): $(OBJ)
 	$(CC) $(LDFLAGS) -o $@ $^
+
 build/%.o: src/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
@@ -29,5 +29,3 @@ distclean: clean
 
 format:
 	@find src -name '*.c' -o -name '*.h' | xargs -r clang-format -i
-
-
